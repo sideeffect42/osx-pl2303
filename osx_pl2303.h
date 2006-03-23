@@ -114,14 +114,6 @@
 
 
 
-
-enum pl2303_type {
-	type_0,		/* don't know the difference between type 0 and */
-	type_1,		/* type 1, until someone from prolific tells us... */
-	HX,		/* HX version of the pl2303 chip */
-};
-
-
 typedef struct BufferMarks
 {
     unsigned long   BufferSize;
@@ -167,7 +159,6 @@ static inline mach_timespec long2tval( unsigned long val )
 
 typedef struct
 {
-	enum pl2303_type type;
     UInt32          State;
     UInt32          WatchStateMask;
     IOLock          *serialRequestLock;

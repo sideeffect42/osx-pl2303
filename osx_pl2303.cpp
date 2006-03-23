@@ -34,7 +34,6 @@
  * - Fix Could not open device bug
  * - Some small bugs
  *
- * http://www.usb.org/developers/devclass_docs/usbcdc11.pdf
  */
  
 #include <IOKit/IOLib.h>
@@ -58,15 +57,6 @@ extern "C" {
 #else
 #define DEBUG_IOLog(args...)
 #endif
-
-#define DATALOG
-
-#ifdef DATALOG
-#define DATA_IOLog(args...)	IOLog (args)
-#else
-#define DATA_IOLog(args...)
-#endif
-
 
 #define super IOSerialDriverSync
 
@@ -125,9 +115,7 @@ IOService *nl_bjaelectronics_driver_PL2303::probe(IOService *provider, SInt32 *s
 
 bool nl_bjaelectronics_driver_PL2303::start(IOService *provider)
 {
-//	enum pl2303_type type = type_0;
-//    IOUSBDeviceDescriptor	desc;
-
+	
     fTerminate = false;     // Make sure we don't think we're being terminated
     fPort = NULL;
     fNub = NULL;
@@ -203,21 +191,7 @@ bool nl_bjaelectronics_driver_PL2303::start(IOService *provider)
     }
 	
     fCommandGate->enable();	
-/*
-	IOLog("%s(%p)::start - GetMaxPacketSize: %p DeviceClass %p\n", getName(), this, fpDevice->GetMaxPacketSize(), fpInterface->GetInterfaceClass());
-    // I use fpInterface->GetInterfaceClass(), but the linux driver descriptor.bDeviceClass. The descriptor is protected so I can't access it directly. 
-	// Research how to solve it has to be done.
-	if (fpInterface->GetInterfaceClass() == 0x02)
-		type = type_0;
-	else if ( fpDevice->GetMaxPacketSize() == 0x40)
-		type = HX;
-	else if (fpInterface->GetInterfaceClass() == 0x00)
-		type = type_1;
-	else if (fpInterface->GetInterfaceClass() == 0xFF)
-		type = type_1;
-	IOLog("%s(%p)::start - device type: %d", getName(), this, type);
-    fPort->type = type;
-*/
+	
 	fUSBStarted = true;  
 	
 	
@@ -585,69 +559,7 @@ void nl_bjaelectronics_driver_PL2303::releaseResources( void )
 //
 bool nl_bjaelectronics_driver_PL2303::startSerial()
 {
-//	IOUSBDevRequest request;
-	char buf[10];	
-//	IOReturn rtn;
 	DEBUG_IOLog("%s(%p)::startSerial \n", getName(), this);
-	memset(buf, 0x00, 0x07); //WARNING IS THIS ALLOWED IN KERNEL SPACE ?
-
-    if (!fNub) {
-		IOLog("%s(%p)::startSerial fNub not available\n", getName(), this);
-		goto	Fail;
-	}
-/*
-    // make chip as sane as can be
-#define FISH(a,b,c,d)								\
-	request.bmRequestType = a; \
-    request.bRequest = b; \
-	request.wValue =  c; \
-	request.wIndex = d; \
-	request.wLength = 1; \
-	request.pData = buf; \
-	rtn =  fpDevice->DeviceRequest(&request); \
-	IOLog("%s(%p)::startSerial FISH 0x%x:0x%x:0x%x:0x%x  %d - %x\n", getName(), this,a,b,c,d,rtn,buf[0]);
-
-#define SOUP(a,b,c,d)								\
-	request.bmRequestType = a; \
-    request.bRequest = b; \
-	request.wValue =  c; \
-	request.wIndex = d; \
-	request.wLength = 0; \
-	request.pData = NULL; \
-	rtn =  fpDevice->DeviceRequest(&request); \
-	IOLog("%s(%p)::startSerial SOUP 0x%x:0x%x:0x%x:0x%x  %d\n", getName(), this,a,b,c,d,rtn);
-
-
-	FISH (VENDOR_READ_REQUEST_TYPE, VENDOR_READ_REQUEST, 0x8484, 0);
-	SOUP (VENDOR_WRITE_REQUEST_TYPE, VENDOR_WRITE_REQUEST, 0x0404, 0);
-	FISH (VENDOR_READ_REQUEST_TYPE, VENDOR_READ_REQUEST, 0x8484, 0);
-	FISH (VENDOR_READ_REQUEST_TYPE, VENDOR_READ_REQUEST, 0x8383, 0);
-	FISH (VENDOR_READ_REQUEST_TYPE, VENDOR_READ_REQUEST, 0x8484, 0);
-	SOUP (VENDOR_WRITE_REQUEST_TYPE, VENDOR_WRITE_REQUEST, 0x0404, 1);
-	FISH (VENDOR_READ_REQUEST_TYPE, VENDOR_READ_REQUEST, 0x8484, 0);
-	FISH (VENDOR_READ_REQUEST_TYPE, VENDOR_READ_REQUEST, 0x8383, 0);
-	FISH (VENDOR_WRITE_REQUEST_TYPE, VENDOR_WRITE_REQUEST, 0x81, 1);
-	SOUP (VENDOR_WRITE_REQUEST_TYPE, VENDOR_WRITE_REQUEST, 0, 1);
-	SOUP (VENDOR_WRITE_REQUEST_TYPE, VENDOR_WRITE_REQUEST, 1, 0);
-*/
-/*	if (fPort->type == HX) { */
-		/* HX chip */
-/*		SOUP (VENDOR_WRITE_REQUEST_TYPE, VENDOR_WRITE_REQUEST, 2, 0x44); */
-		/* reset upstream data pipes */
-/*          	SOUP (VENDOR_WRITE_REQUEST_TYPE, VENDOR_WRITE_REQUEST, 8, 0);
-        	SOUP (VENDOR_WRITE_REQUEST_TYPE, VENDOR_WRITE_REQUEST, 9, 0);
-	} else {
-		SOUP (VENDOR_WRITE_REQUEST_TYPE, VENDOR_WRITE_REQUEST, 2, 0x24);
-	}
-*/	
-//	request.bmRequestType = USBmakebmRequestType(kUSBOut, kUSBClass, kUSBInterface);
-//    request.bRequest = SET_LINE_REQUEST;
-//	request.wValue =  0; 
-//	request.wIndex = 0;
-//	request.wLength = 7;
-//	request.pData = buf;
-//	rtn =  fpDevice->DeviceRequest(&request);
-//	DEBUG_IOLog("%s(%p)::startSerial - chip clean return: %p \n", getName(), this,  rtn);
 	
 	// open the pipe endpoints
 	if (!allocateResources() ) {
@@ -1418,7 +1330,7 @@ void nl_bjaelectronics_driver_PL2303::changeState( PortInfo_t *port, UInt32 stat
 IOReturn nl_bjaelectronics_driver_PL2303::acquirePort(bool sleep, void *refCon)
 {
     IOReturn	ret;
-    IOLog("%s(%p)::acquirePort ACQUIREPORT PLEASE SET BACK TO DEBUGLOG\n", getName(), this);
+    DEBUG_IOLog("%s(%p)::acquirePort\n", getName(), this);
 
     retain();
     ret = fCommandGate->runAction(acquirePortAction, (void *)sleep, (void *)refCon);
@@ -2719,23 +2631,6 @@ IOReturn nl_bjaelectronics_driver_PL2303::StartTransmit(UInt32 control_length, U
     fpPipeOutMDP->setLength( fCount );
 	
     fWriteActive = true;
-#ifdef DATALOG
-	UInt8 *buf;
-	UInt32 buflen;
-	buflen = fCount;
-	buf = &fPipeOutBuffer[0];
-	IOLockLock( fPort->serialRequestLock );
-	DATA_IOLog("nl_bjaelectronics_driver_PL2303: Send: ");
-	while ( buflen ){
-		unsigned char c = *buf;
-		DATA_IOLog("[%02x] ",c);
-		buf++;
-		buflen--;
-	}
-	DATA_IOLog("\n");	
-	IOLockUnlock( fPort->serialRequestLock );
-
-#endif	
     ior = fpOutPipe->Write( fpPipeOutMDP, 1000, 1000, &fWriteCompletionInfo );  // 1 second timeouts
     
     return ior;
@@ -2761,19 +2656,19 @@ void nl_bjaelectronics_driver_PL2303::dataWriteComplete( void *obj, void *param,
     nl_bjaelectronics_driver_PL2303  *me = (nl_bjaelectronics_driver_PL2303*)obj;
     Boolean done = true;                // write really finished?
 	
+    
     me->fWriteActive = false;
     
     // in a transmit complete, but need to manually transmit a zero-length packet
     // if it's a multiple of the max usb packet size for the bulk-out pipe (64 bytes)
     if ( rc == kIOReturnSuccess )   /* If operation returned ok:    */
     {
-
 		if ( me->fCount > 0 )                       // Check if it was not a zero length write
 		{
-
 			if ( (me->fCount % 64) == 0 )               // If was a multiple of 64 bytes then we need to do a zero length write
 			{
-			
+				//		XTRACE(kLogDataWriteCompleteZero, 0, 0);
+				//		LogData( kUSBOut, 0, me->fPipeOutBuffer );
 				me->fWriteActive = true;
 				me->fpPipeOutMDP->setLength( 0 );
 				me->fCount = 0;
@@ -2870,22 +2765,6 @@ void nl_bjaelectronics_driver_PL2303::dataReadComplete( void *obj, void *param, 
 		dtlength = USBLapPayLoad - remaining;
 		if ( dtlength > 0 )
 		{
-#ifdef DATALOG
-			IOLockLock( me->fPort->serialRequestLock );
-			UInt8 *buf;
-			UInt32 buflen;
-			buflen = dtlength;
-			buf = &me->fPipeInBuffer[0];
-			DATA_IOLog("nl_bjaelectronics_driver_PL2303: Receive: ");
-			while ( buflen ){
-				unsigned char c = *buf;
-				DATA_IOLog("[%02x] ",c);
-				buf++;
-				buflen--;
-			}
-			DATA_IOLog("\n");	
-			IOLockUnlock( me->fPort->serialRequestLock );
-#endif	
 			ior = me->AddtoQueue( &me->fPort->RX, &me->fPipeInBuffer[0], dtlength );
 		}
 		
