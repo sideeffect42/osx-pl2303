@@ -1,8 +1,14 @@
 /*
  * osx_pl2303.h Prolific PL2303 USB to serial adaptor driver for OS X
  *
- * Copyright (c) 2006 BJA Electronics, Jeroen Arnoldus (opensource@bja-electronics.nl)
- * 
+ * Copyright (c) 2013 NoZAP B.V., Jeroen Arnoldus (opensource@nozap.me , http://www.nozap.me http://www.nozap.nl )
+ * Copyright (c) 2006-2012 BJA Electronics, Jeroen Arnoldus (opensource@bja-electronics.nl)
+ *
+ * Additional contributors:
+ *     Michael Haller
+ *     Maarten Pepping
+ *     Bryan Berg
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
@@ -17,7 +23,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
- * Driver is inspired by the following projects:
+ * Source of inspiration:
  * - Linux kernel PL2303.c Copyright (C) 2001-2004 Greg Kroah-Hartman (greg@kroah.com)
  *                         Copyright (C) 2003 IBM Corp.
  * - Apple16x50Serial Copyright (c) 1997-2003 Apple Computer, Inc. All rights reserved.
@@ -26,31 +32,45 @@
  * - AppleUSBIrda Copyright (c) 2000 Apple Computer, Inc. All rights reserved.
  *
  */
- 
+
 #include <IOKit/IOService.h>
 #include <IOKit/serial/IOSerialDriverSync.h>
 #include <IOKit/serial/IORS232SerialStreamSync.h>
-#include <IOKit/usb/IOUSBDevice.h> 
+#include <IOKit/usb/IOUSBDevice.h>
 
 #define PROLIFIC_REV_H			0x0202
 #define PROLIFIC_REV_X			0x0300
 #define PROLIFIC_REV_HX_CHIP_D	0x0400
 #define PROLIFIC_REV_1			0x0001
 
-#define baseName        "PL2303-"
+#define baseName        "NoZAP-PL2303-"
 
 #define defaultName     "PL2303 Device"
 #define productNameLength   32                  // Arbitrary length
 #define propertyTag     "Product Name"
 
-#define MAX_BLOCK_SIZE			PAGE_SIZE 
+#define MAX_BLOCK_SIZE			PAGE_SIZE
 // was PAGE_SIZE, but due to errors lowered to maximum of 10 characters
 
 #define kXOnChar  '\x11'
 #define kXOffChar '\x13'
 
 
-						                       
+
+// New Prolific 2303HX supported speeds form Manual ds_pl2303HXD_v1.1.doc
+// Revision Data Apr, 16 2007, Note from prolific (manual page 9):
+// By taking advantage of USB bulk transfer mode, large data buffers,
+// and automatic flow control, PL-2303HX is capable of achieving higher
+// throughput compared to traditional UART (Universal Asynchronous Receiver
+// Transmitter) ports. When real RS232 signaling is not required, baud rate
+// higher than 115200 bps could be used for even higher performance. The
+// flexible baud rate generator of PL-2303HX could be programmed to generate
+// any rate between 75 bps to 12M bps.
+
+// My note, however not all the baudrated may be supported by the driver.
+// The following ones are given for sure (on page 19) other rates maybe
+// available depending on the model.
+
 #define kLinkSpeedIgnored	0
 #define kLinkSpeed75		75
 #define kLinkSpeed150		150
@@ -69,13 +89,31 @@
 #define kLinkSpeed115200    115200
 #define kLinkSpeed230400	230400
 #define kLinkSpeed460800	460800
+#define kLinkSpeed614400	614400
+#define kLinkSpeed921600	921600
+#define kLinkSpeed1228800	1228800
+#define kLinkSpeed1843200	1843200
+#define kLinkSpeed2457600	2457600
+#define kLinkSpeed3000000	3000000
+#define kLinkSpeed6000000	6000000
 
 #define kDefaultBaudRate    9600
-#define kMaxBaudRate        460800     
+#define kMaxBaudRate        6000000
 #define kMinBaudRate        75
-#define kMaxCirBufferSize   4096
 
 
+// If not working at very high rate one can reconsider also
+// increasing the size of the circular buffer to store at
+// lease 0.1 sec: before was about 460800/10bits/10= 4608
+// now should be  6000000/10bits/10 = 60Kbytes in the worst case
+// In my code set it to 16K to balance among a convenient
+// speed and memory use.
+
+#define kMaxCirBufferSize   16384
+
+
+#define LAST_BYTE_COOLDOWN  100000
+#define BYTE_WAIT_PENALTY   2
 
 #define SPECIAL_SHIFT       (5)
 #define SPECIAL_MASK        ((1<<SPECIAL_SHIFT) - 1)
@@ -127,7 +165,7 @@ enum tXO_State {
 #define kDSR				0x02
 #define kRI					0x08
 #define kDCD				0x01
-#define kHandshakeInMask	((UInt32)( PD_RS232_S_CTS | PD_RS232_S_DSR | PD_RS232_S_CAR | PD_RS232_S_RI  )) 
+#define kHandshakeInMask	((UInt32)( PD_RS232_S_CTS | PD_RS232_S_DSR | PD_RS232_S_CAR | PD_RS232_S_RI  ))
 
 
 #define INTERRUPT_BUFF_SIZE 10
@@ -144,7 +182,7 @@ enum tXO_State {
 #define CONTROL_RTS					0x02
 
 #define BREAK_REQUEST_TYPE			0x21
-#define BREAK_REQUEST				0x23	
+#define BREAK_REQUEST				0x23
 #define BREAK_ON					0xffff
 #define BREAK_OFF					0x0000
 
@@ -162,7 +200,7 @@ enum tXO_State {
 
 /*
  * Device Configuration Registers (DCR0, DCR1, DCR2)
-*/
+ */
 
 #define SET_DCR0                                0x00
 #define GET_DCR0                                0x80
@@ -179,7 +217,7 @@ enum tXO_State {
 #define GET_DCR2                                0x82
 #define DCR2_INIT_H                             0x24
 #define DCR2_INIT_X                             0x44
- 
+
 /*
  * On-chip Date Buffers:
  */
@@ -232,16 +270,16 @@ UInt32 static inline boolBit(UInt32 a, bool b, UInt32 m) { return b ? (a|m) : (a
 
 
 /* Inline time conversions */
-    
+
 static inline unsigned long tval2long( mach_timespec val )
 {
-   return (val.tv_sec * NSEC_PER_SEC) + val.tv_nsec;
+    return (val.tv_sec * NSEC_PER_SEC) + val.tv_nsec;
 }
 
 static inline mach_timespec long2tval( unsigned long val )
 {
     mach_timespec   tval;
-
+    
     tval.tv_sec  = val / NSEC_PER_SEC;
     tval.tv_nsec = val % NSEC_PER_SEC;
     return tval;
@@ -253,20 +291,20 @@ typedef struct
 	enum pl2303_type type;
     UInt32          State;
 	UInt8          lineState;
-
+    
     UInt32          WatchStateMask;
     IOLock          *serialRequestLock;
-
+    
 	// queue control structures:
-	    
+    
     CirQueue        RX;
     CirQueue        TX;
-
+    
     BufferMarks     RXStats;
     BufferMarks     TXStats;
     
 	// UART configuration info:
-	    
+    
     UInt32          CharLength;
     UInt32          StopBits;
     UInt32          TX_Parity;
@@ -277,7 +315,7 @@ typedef struct
     bool            MinLatency;
     
 	// flow control state & configuration:
-	    
+    
     UInt8           XONchar;
     UInt8           XOFFchar;
     UInt32          SWspecial[ 0x100 >> SPECIAL_SHIFT ];
@@ -285,7 +323,7 @@ typedef struct
 	
     tXO_State       RXOstate;    /* Indicates our receive state.    */
     tXO_State       TXOstate;    /* Indicates our transmit state, if we have received any Flow Control. */
-
+    
     UInt32			FlowControlState;			// tx flow control state, one of PAUSE_SEND if paused or CONTINUE_SEND if not blocked
     bool			DCDState;
     bool			CTSState;
@@ -303,7 +341,7 @@ typedef struct
     bool            AreTransmitting;
     
 	/* extensions to handle the Driver */
-	    
+    
     bool            isDriver;
     void            *DriverPowerRegister;
     UInt32          DriverPowerMask;
@@ -311,9 +349,9 @@ typedef struct
 	
 } PortInfo_t;
 
-class nl_bjaelectronics_driver_PL2303 : public IOSerialDriverSync
+class me_nozap_driver_PL2303 : public IOSerialDriverSync
 {
-	OSDeclareDefaultStructors(nl_bjaelectronics_driver_PL2303)
+	OSDeclareDefaultStructors(me_nozap_driver_PL2303)
 private:
     UInt32          fCount;         // usb write length
     UInt8           fSessions;      // Active sessions (count of opens on /dev/tty entries)
@@ -322,22 +360,26 @@ private:
     UInt8           fProductName[productNameLength];    // Actually the product String from the Device
     PortInfo_t      *fPort;         // The Port
     bool            fReadActive;    // usb read is active
+#if FIX_PARITY_PROCESSING
+    clock_sec_t			_fReadTimestampSecs;
+    clock_nsec_t        _fReadTimestampNanosecs;
+#endif
     bool            fWriteActive;   // usb write is active
     UInt8           fPowerState;    // off,on ordinal for power management
 	IORS232SerialStreamSync		*fNub;              // glue back to IOSerialStream side
-
+    
     IOWorkLoop			*fWorkLoop;		// holds the workloop for this driver
 	IOCommandGate		*fCommandGate;		// and the command gate
-
+    
     UInt32          fBaudCode;          //  encoded baud code for change speed byte
     UInt32          fCurrentBaud;       //  current speed in bps
-
-		
-		
+    
+    
+    
 	IOBufferMemoryDescriptor    *fpinterruptPipeMDP;
     IOBufferMemoryDescriptor    *fpPipeInMDP;
     IOBufferMemoryDescriptor    *fpPipeOutMDP;
-
+    
     UInt8               *fpinterruptPipeBuffer;
     UInt8               *fPipeInBuffer;
     UInt8               *fPipeOutBuffer;
@@ -361,18 +403,18 @@ public:
     IOUSBPipe           *fpOutPipe;
     IOUSBPipe           *fpInterruptPipe;
 	// IOKit methods
-
+    
 	virtual bool init(OSDictionary *dictionary = 0);
 	virtual IOService*  probe( IOService *provider, SInt32 *score );
-
+    
 	virtual void free(void);
 	virtual bool start(IOService *provider);
 	virtual void stop(IOService *provider);
 	virtual IOReturn    message( UInt32 type, IOService *provider,  void *argument = 0 );
-
+    
 	
 	// IORS232SerialStreamSync Abstract Method Implementation
-
+    
 	virtual	IOReturn	acquirePort(bool sleep, void *refCon);
     virtual	IOReturn	releasePort(void *refCon);
     virtual	UInt32		getState(void *refCon);
@@ -385,11 +427,11 @@ public:
     virtual	IOReturn	dequeueEvent(UInt32 *event, UInt32 *data, bool sleep, void *refCon);
     virtual	IOReturn	enqueueData(UInt8 *buffer, UInt32 size, UInt32 *count, bool sleep, void *refCon);
     virtual	IOReturn	dequeueData(UInt8 *buffer, UInt32 size, UInt32 *count, UInt32 min, void *refCon);
-
+    
     virtual	IOWorkLoop	*getWorkLoop() const;
-
+    
 	// Static stubs for IOCommandGate::runAction
-        
+    
     static	IOReturn	acquirePortAction(OSObject *owner, void *arg0, void *arg1, void *, void *);
 	static	IOReturn	releasePortAction(OSObject *owner, void *arg1, void *, void *, void *);
     static	IOReturn	setStateAction(OSObject *owner, void *arg0, void *arg1, void *arg2, void *);
@@ -409,23 +451,20 @@ public:
     virtual	IOReturn	executeEventGated(UInt32 event, UInt32 data, void *refCon);
     virtual	IOReturn	requestEventGated(UInt32 event, UInt32 *data, void *refCon);
     virtual	IOReturn	enqueueDataGated(UInt8 *buffer, UInt32 size, UInt32 *count, bool sleep);
-    virtual	IOReturn	dequeueDataGated(UInt8 *buffer, UInt32 size, UInt32 *count, UInt32 min);	
-	
-    // Power management routines
-    virtual unsigned long initialPowerStateForDomainState ( IOPMPowerFlags );
-    virtual IOReturn    setPowerState(unsigned long powerStateOrdinal, IOService * whatDevice);
-	
+    virtual	IOReturn	dequeueDataGated(UInt8 *buffer, UInt32 size, UInt32 *count, UInt32 min);
+    
 	bool				setUpTransmit( void );
 	IOReturn			setSerialConfiguration( void );
     IOReturn			startTransmit( UInt32 control_length, UInt8 *control_buffer, UInt32 data_length, UInt8 *data_buffer );
 	
 	
 private:
-
+    
 	/**** Queue primatives ****/
     
     QueueStatus     addBytetoQueue( CirQueue *Queue, char Value );
     QueueStatus     getBytetoQueue( CirQueue *Queue, UInt8 *Value );
+    QueueStatus     peekBytefromQueue( CirQueue *Queue, UInt8 *Value, size_t offset);
     QueueStatus     initQueue( CirQueue *Queue, UInt8 *Buffer, size_t Size );
     QueueStatus     closeQueue( CirQueue *Queue );
 	QueueStatus     flush( CirQueue *Queue );
@@ -436,7 +475,7 @@ private:
     size_t          usedSpaceinQueue( CirQueue *Queue );
     size_t          getQueueSize( CirQueue *Queue );
     void            checkQueues( PortInfo_t *port );
-
+    
 	/**** State manipulations ****/
     
     IOReturn        privateWatchState( PortInfo_t *port, UInt32 *state, UInt32 mask );
@@ -462,12 +501,13 @@ private:
     void            SetStructureDefaults( PortInfo_t *port, bool Init );
     bool            allocateRingBuffer( CirQueue *Queue, size_t BufferSize );
     void            freeRingBuffer( CirQueue *Queue );
-
+    
     /**** FlowControl ****/
 	IOReturn        setControlLines( PortInfo_t *port );
     UInt32			generateRxQState( PortInfo_t *port );
 	IOReturn		setBreak( bool data);
 	
 	IOReturn        vendor_write0( UInt16 value, UInt16 index);
-
+    
 };
+
