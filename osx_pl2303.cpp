@@ -2,6 +2,7 @@
  *
  * osx_pl2303.cpp Prolific PL2303 USB to serial adaptor driver for OS X
  *
+ * Copyright (c) 2015 maniswebdesign, Takashi Yoshi (takashi@yoshi.email)
  * Copyright (c) 2013 NoZAP B.V., Jeroen Arnoldus (opensource@nozap.me, http://www.nozap.me http://www.nozap.nl )
  * Copyright (c) 2006 BJA Electronics, Jeroen Arnoldus (opensource@bja-electronics.nl)
  *
@@ -44,7 +45,7 @@
 #include <IOKit/IOMessage.h>
 
 
-#include "Driver_pl2303.h"
+#include "osx_pl2303.h"
 #include <IOKit/serial/IOSerialKeys.h>
 #include <IOKit/usb/IOUSBInterface.h>
 #include <IOKit/usb/IOUSBLog.h>
@@ -76,7 +77,7 @@ extern "C" {
 
 #define super IOSerialDriverSync
 
-OSDefineMetaClassAndStructors(me_nozap_driver_PL2303, IOSerialDriverSync)
+OSDefineMetaClassAndStructors(osx_pl2303, IOSerialDriverSync)
 
 
 /****************************************************************************************************/
@@ -100,20 +101,20 @@ static UInt8 Asciify(UInt8 i)
     
 }/* end Asciify */
 
-bool me_nozap_driver_PL2303::init(OSDictionary *dict)
+bool osx_pl2303::init(OSDictionary *dict)
 {
 	bool res = super::init(dict);
 	DEBUG_IOLog(4,"%s(%p)::Initializing\n", getName(), this);
 	return res;
 }
 
-void me_nozap_driver_PL2303::free(void)
+void osx_pl2303::free(void)
 {
 	DEBUG_IOLog(4,"%s(%p)::Freeing\n", getName(), this);
 	super::free();
 }
 
-IOService *me_nozap_driver_PL2303::probe(IOService *provider, SInt32 *score)
+IOService *osx_pl2303::probe(IOService *provider, SInt32 *score)
 {
 	IOUSBDevice		*Provider;
 	DEBUG_IOLog(4,",%s(%p)::Probe\n", getName(), this);
@@ -128,7 +129,7 @@ IOService *me_nozap_driver_PL2303::probe(IOService *provider, SInt32 *score)
 }
 
 
-bool me_nozap_driver_PL2303::start(IOService *provider)
+bool osx_pl2303::start(IOService *provider)
 {
     enum pl2303_type type = type_1;
     
@@ -267,7 +268,7 @@ Fail:
 
 /****************************************************************************************************/
 //
-//      Method:     me_nozap_driver_PL2303::stop
+//      Method:     osx_pl2303::stop
 //
 //      Inputs:     provider - my provider
 //
@@ -277,7 +278,7 @@ Fail:
 //
 /****************************************************************************************************/
 
-void me_nozap_driver_PL2303::stop( IOService *provider )
+void osx_pl2303::stop( IOService *provider )
 {
     
     
@@ -321,7 +322,7 @@ void me_nozap_driver_PL2303::stop( IOService *provider )
 
 /****************************************************************************************************/
 //
-//		Method:		me_nozap_driver_PL2303::getWorkLoop
+//		Method:		osx_pl2303::getWorkLoop
 //
 //		Inputs:
 //
@@ -330,7 +331,7 @@ void me_nozap_driver_PL2303::stop( IOService *provider )
 //		Desc:		create our own workloop if we don't have one already.
 //
 /****************************************************************************************************/
-IOWorkLoop* me_nozap_driver_PL2303::getWorkLoop() const
+IOWorkLoop* osx_pl2303::getWorkLoop() const
 {
     IOWorkLoop *w;
     DEBUG_IOLog(4,"%s(%p)::getWorkLoop\n", getName(), this);
@@ -344,7 +345,7 @@ IOWorkLoop* me_nozap_driver_PL2303::getWorkLoop() const
 
 /****************************************************************************************************/
 //
-//      Method:     me_nozap_driver_PL2303::privateWatchState
+//      Method:     osx_pl2303::privateWatchState
 //
 //      Inputs:     port - the specified port, state - state watching for, mask - state mask (the specific bits)
 //
@@ -359,7 +360,7 @@ IOWorkLoop* me_nozap_driver_PL2303::getWorkLoop() const
 //
 /****************************************************************************************************/
 
-IOReturn me_nozap_driver_PL2303::privateWatchState( PortInfo_t *port, UInt32 *state, UInt32 mask )
+IOReturn osx_pl2303::privateWatchState( PortInfo_t *port, UInt32 *state, UInt32 mask )
 {
     unsigned            watchState, foundStates;
     bool                autoActiveBit   = false;
@@ -439,7 +440,7 @@ IOReturn me_nozap_driver_PL2303::privateWatchState( PortInfo_t *port, UInt32 *st
 
 /****************************************************************************************************/
 //
-//      Method:     me_nozap_driver_PL2303::allocateResources
+//      Method:     osx_pl2303::allocateResources
 //
 //      Inputs:
 //
@@ -449,7 +450,7 @@ IOReturn me_nozap_driver_PL2303::privateWatchState( PortInfo_t *port, UInt32 *st
 //
 /****************************************************************************************************/
 
-bool me_nozap_driver_PL2303::allocateResources( void )
+bool osx_pl2303::allocateResources( void )
 {
     IOUSBFindEndpointRequest    epReq;      // endPoint request struct on stack
     bool                        goodCall;   // return flag fm Interface call
@@ -566,7 +567,7 @@ Fail:
 
 /****************************************************************************************************/
 //
-//      Method:     me_nozap_driver_PL2303::releaseResources
+//      Method:     osx_pl2303::releaseResources
 //
 //      Inputs:     port - the Port
 //
@@ -576,9 +577,9 @@ Fail:
 //
 /****************************************************************************************************/
 
-void me_nozap_driver_PL2303::releaseResources( void )
+void osx_pl2303::releaseResources( void )
 {
-    DEBUG_IOLog(4,"me_nozap_driver_PL2303::releaseResources\n");
+    DEBUG_IOLog(4,"osx_pl2303::releaseResources\n");
     
     if ( fpInterface ) {
 		fpInterface->close( this );
@@ -611,7 +612,7 @@ void me_nozap_driver_PL2303::releaseResources( void )
 // assumes createSerialStream is called once at usb start time
 // calls allocateResources to open endpoints
 //
-bool me_nozap_driver_PL2303::startSerial()
+bool osx_pl2303::startSerial()
 {
 	IOUSBDevRequest request;
 	char * buf;
@@ -711,7 +712,7 @@ Fail:
     return false;
 }
 
-void me_nozap_driver_PL2303::stopSerial( bool resetDevice )
+void osx_pl2303::stopSerial( bool resetDevice )
 {
     
 	DEBUG_IOLog(1,"%s(%p)::stopSerial\n", getName(), this);
@@ -732,7 +733,7 @@ Fail:
 
 /****************************************************************************************************/
 //
-//      Method:     me_nozap_driver_PL2303::CheckSerialState
+//      Method:     osx_pl2303::CheckSerialState
 //
 //      Inputs:     open session count (fSessions)
 //                  usb start/stop (fStartStopUSB) -- replace with fTerminate?
@@ -743,7 +744,7 @@ Fail:
 //
 /****************************************************************************************************/
 
-IOReturn me_nozap_driver_PL2303::CheckSerialState( void )
+IOReturn osx_pl2303::CheckSerialState( void )
 {
     Boolean     newState = fUSBStarted &    // usb must have started, and
     //			(fPowerState == kIrDAPowerOnState) &   // powered on by the power manager, and
@@ -775,7 +776,7 @@ IOReturn me_nozap_driver_PL2303::CheckSerialState( void )
 
 /****************************************************************************************************/
 //
-//      Method:     me_nozap_driver_PL2303::configureDevice
+//      Method:     osx_pl2303::configureDevice
 //
 //      Inputs:     numconfigs - number of configurations present
 //
@@ -785,7 +786,7 @@ IOReturn me_nozap_driver_PL2303::CheckSerialState( void )
 //
 /****************************************************************************************************/
 
-bool me_nozap_driver_PL2303::configureDevice( UInt8 numConfigs )
+bool osx_pl2303::configureDevice( UInt8 numConfigs )
 {
     IOUSBFindInterfaceRequest           req;            // device request Class on stack
     const IOUSBConfigurationDescriptor  *cd = NULL;     // configuration descriptor
@@ -881,7 +882,7 @@ Fail:
 
 /****************************************************************************************************/
 //
-//      Method:     me_nozap_driver_PL2303::createNub
+//      Method:     osx_pl2303::createNub
 //
 //      Inputs:
 //
@@ -891,7 +892,7 @@ Fail:
 //              create serial stream finishes the job later.
 //
 /****************************************************************************************************/
-bool me_nozap_driver_PL2303::createNub(void)
+bool osx_pl2303::createNub(void)
 {
     DEBUG_IOLog(4,"%s(%p)::createNub\n", getName(), this);
     
@@ -921,7 +922,7 @@ Fail:
     return false;
 }
 
-void me_nozap_driver_PL2303::destroyNub()
+void osx_pl2303::destroyNub()
 {
 	DEBUG_IOLog(4,"%s(%p)::destroyNub Try to destroy nub\n", getName(), this);
     if (fPort != NULL) {
@@ -941,7 +942,7 @@ void me_nozap_driver_PL2303::destroyNub()
 
 /****************************************************************************************************/
 //
-//      Method:     me_nozap_driver_PL2303::createSuffix
+//      Method:     osx_pl2303::createSuffix
 //
 //      Inputs:     None
 //
@@ -956,7 +957,7 @@ void me_nozap_driver_PL2303::destroyNub()
 //
 /****************************************************************************************************/
 
-bool me_nozap_driver_PL2303::createSuffix( unsigned char *sufKey )
+bool osx_pl2303::createSuffix( unsigned char *sufKey )
 {
     
     IOReturn                rc;
@@ -1029,7 +1030,7 @@ bool me_nozap_driver_PL2303::createSuffix( unsigned char *sufKey )
 
 /****************************************************************************************************/
 //
-//      Method:     me_nozap_driver_PL2303::SetStructureDefaults
+//      Method:     osx_pl2303::SetStructureDefaults
 //
 //      Inputs:     port - the port to set the defaults, Init - Probe time or not
 //
@@ -1039,7 +1040,7 @@ bool me_nozap_driver_PL2303::createSuffix( unsigned char *sufKey )
 //
 /****************************************************************************************************/
 
-void me_nozap_driver_PL2303::SetStructureDefaults( PortInfo_t *port, bool Init )
+void osx_pl2303::SetStructureDefaults( PortInfo_t *port, bool Init )
 {
     UInt32  tmp;
     
@@ -1102,7 +1103,7 @@ void me_nozap_driver_PL2303::SetStructureDefaults( PortInfo_t *port, bool Init )
 
 /****************************************************************************************************/
 //
-//      Method:     me_nozap_driver_PL2303::createSerialStream
+//      Method:     osx_pl2303::createSerialStream
 //
 //      Inputs:     None
 //
@@ -1112,7 +1113,7 @@ void me_nozap_driver_PL2303::SetStructureDefaults( PortInfo_t *port, bool Init )
 //
 /****************************************************************************************************/
 
-bool me_nozap_driver_PL2303::createSerialStream()
+bool osx_pl2303::createSerialStream()
 {
     UInt8           indx;
     IOReturn            rc;
@@ -1181,7 +1182,7 @@ bool me_nozap_driver_PL2303::createSerialStream()
 // release things created in createSerialStream
 //
 void
-me_nozap_driver_PL2303::destroySerialStream(void)
+osx_pl2303::destroySerialStream(void)
 {
     DEBUG_IOLog(4,"%s(%p)::destroySerialStream\n", getName(), this);
 	if( !fPort ) goto Fail;
@@ -1211,7 +1212,7 @@ Fail:
 //
 // start reading on the pipes
 //
-bool me_nozap_driver_PL2303::startPipes( void )
+bool osx_pl2303::startPipes( void )
 {
     IOReturn                    rtn;
     DEBUG_IOLog(4,"%s(%p)::startPipes\n", getName(), this);
@@ -1247,7 +1248,7 @@ Fail:
 //
 // stop i/o on the pipes
 //
-void me_nozap_driver_PL2303::stopPipes()
+void osx_pl2303::stopPipes()
 {
 	DEBUG_IOLog(4,"%s(%p)::Stopping\n", getName(), this);
     if (fpInterruptPipe){
@@ -1272,7 +1273,7 @@ void me_nozap_driver_PL2303::stopPipes()
 
 /****************************************************************************************************/
 //
-//      Method:     me_nozap_driver_PL2303::message
+//      Method:     osx_pl2303::message
 //
 //      Inputs:     type - message type, provider - my provider, argument - additional parameters
 //
@@ -1286,7 +1287,7 @@ enum {                                  // messageType for the callback routines
     kIrDACallBack_Unplug    = 0x1001    // USB Device is unplugged
 };
 
-IOReturn me_nozap_driver_PL2303::message( UInt32 type, IOService *provider,  void *argument)
+IOReturn osx_pl2303::message( UInt32 type, IOService *provider,  void *argument)
 {
     IOReturn err = kIOReturnSuccess;
     DEBUG_IOLog(4,"%s(%p)::message %p\n", getName(), this, type);
@@ -1422,7 +1423,7 @@ IOReturn me_nozap_driver_PL2303::message( UInt32 type, IOService *provider,  voi
 
 /****************************************************************************************************/
 //
-//      Method:     me_nozap_driver_PL2303::readPortState
+//      Method:     osx_pl2303::readPortState
 //
 //      Inputs:     port - the specified port
 //
@@ -1432,20 +1433,20 @@ IOReturn me_nozap_driver_PL2303::message( UInt32 type, IOService *provider,  voi
 //
 /****************************************************************************************************/
 
-UInt32 me_nozap_driver_PL2303::readPortState( PortInfo_t *port )
+UInt32 osx_pl2303::readPortState( PortInfo_t *port )
 {
     UInt32              returnState;
-	DEBUG_IOLog(6,"me_nozap_driver_PL2303::readPortState IOLockLock( port->serialRequestLock );\n" );
+	DEBUG_IOLog(6,"osx_pl2303::readPortState IOLockLock( port->serialRequestLock );\n" );
     
     IOLockLock( port->serialRequestLock );
-	DEBUG_IOLog(6,"me_nozap_driver_PL2303::readPortState port->State\n", returnState );
+	DEBUG_IOLog(6,"osx_pl2303::readPortState port->State\n", returnState );
     
 	returnState = port->State;
-	DEBUG_IOLog(6,"me_nozap_driver_PL2303::readPortState IOLockUnLock( port->serialRequestLock );\n" );
+	DEBUG_IOLog(6,"osx_pl2303::readPortState IOLockUnLock( port->serialRequestLock );\n" );
     
 	IOLockUnlock( port->serialRequestLock);
 	
-	DEBUG_IOLog(6,"me_nozap_driver_PL2303::readPortState returnstate: %p \n", returnState );
+	DEBUG_IOLog(6,"osx_pl2303::readPortState returnstate: %p \n", returnState );
 	
     return returnState;
     
@@ -1453,7 +1454,7 @@ UInt32 me_nozap_driver_PL2303::readPortState( PortInfo_t *port )
 
 /****************************************************************************************************/
 //
-//      Method:     me_nozap_driver_PL2303::changeState
+//      Method:     osx_pl2303::changeState
 //
 //      Inputs:     port - the specified port, state - new state, mask - state mask (the specific bits)
 //
@@ -1466,12 +1467,12 @@ UInt32 me_nozap_driver_PL2303::readPortState( PortInfo_t *port )
 //
 /****************************************************************************************************/
 
-void me_nozap_driver_PL2303::changeState( PortInfo_t *port, UInt32 state, UInt32 mask )
+void osx_pl2303::changeState( PortInfo_t *port, UInt32 state, UInt32 mask )
 {
     UInt32              delta;
     DEBUG_IOLog(6,"%s(%p)::changeState\n", getName(), this);
 	
-	DEBUG_IOLog(6,"me_nozap_driver_PL2303::changeState IOLockLock( port->serialRequestLock );\n" );
+	DEBUG_IOLog(6,"osx_pl2303::changeState IOLockLock( port->serialRequestLock );\n" );
     
 	IOLockLock( port->serialRequestLock );
 	
@@ -1495,7 +1496,7 @@ void me_nozap_driver_PL2303::changeState( PortInfo_t *port, UInt32 state, UInt32
 	}
     
     
-	DEBUG_IOLog(6,"me_nozap_driver_PL2303::changeState IOLockUnLock( port->serialRequestLock );\n" );
+	DEBUG_IOLog(6,"osx_pl2303::changeState IOLockUnLock( port->serialRequestLock );\n" );
     
     IOLockUnlock( port->serialRequestLock );
     
@@ -1531,7 +1532,7 @@ void me_nozap_driver_PL2303::changeState( PortInfo_t *port, UInt32 state, UInt32
 
 /****************************************************************************************************/
 //
-//		Method:		me_nozap_driver_PL2303::acquirePort
+//		Method:		osx_pl2303::acquirePort
 //
 //		Inputs:		sleep - true (wait for it), false (don't)
 //				refCon - the Port (not used)
@@ -1542,7 +1543,7 @@ void me_nozap_driver_PL2303::changeState( PortInfo_t *port, UInt32 state, UInt32
 //
 /****************************************************************************************************/
 
-IOReturn me_nozap_driver_PL2303::acquirePort(bool sleep, void *refCon)
+IOReturn osx_pl2303::acquirePort(bool sleep, void *refCon)
 {
     IOReturn	ret;
     DEBUG_IOLog(4,"%s(%p)::acquirePort\n", getName(), this);
@@ -1557,23 +1558,23 @@ IOReturn me_nozap_driver_PL2303::acquirePort(bool sleep, void *refCon)
 
 /****************************************************************************************************/
 //
-//		Method:		me_nozap_driver_PL2303::acquirePortAction
+//		Method:		osx_pl2303::acquirePortAction
 //
 //		Desc:		Dummy pass through for acquirePortGated.
 //
 /****************************************************************************************************/
 
-IOReturn me_nozap_driver_PL2303::acquirePortAction(OSObject *owner, void *arg0, void *arg1, void *, void *)
+IOReturn osx_pl2303::acquirePortAction(OSObject *owner, void *arg0, void *arg1, void *, void *)
 {
-    DEBUG_IOLog(4,"me_nozap_driver_PL2303::acquirePortAction\n");
+    DEBUG_IOLog(4,"osx_pl2303::acquirePortAction\n");
     
-    return ((me_nozap_driver_PL2303 *)owner)->acquirePortGated((bool)arg0, (void *)arg1);
+    return ((osx_pl2303 *)owner)->acquirePortGated((bool)arg0, (void *)arg1);
     
 }/* end acquirePortAction */
 
 /****************************************************************************************************/
 //
-//		Method:		me_nozap_driver_PL2303::acquirePortGated
+//		Method:		osx_pl2303::acquirePortGated
 //
 //		Inputs:		sleep - true (wait for it), false (don't), refCon - the Port
 //
@@ -1588,7 +1589,7 @@ IOReturn me_nozap_driver_PL2303::acquirePortAction(OSObject *owner, void *arg0, 
 //
 /****************************************************************************************************/
 
-IOReturn me_nozap_driver_PL2303::acquirePortGated( bool sleep, void *refCon )
+IOReturn osx_pl2303::acquirePortGated( bool sleep, void *refCon )
 {
     PortInfo_t          *port = (PortInfo_t *) refCon;
     UInt32              busyState = 0;
@@ -1647,7 +1648,7 @@ IOReturn me_nozap_driver_PL2303::acquirePortGated( bool sleep, void *refCon )
 
 /****************************************************************************************************/
 //
-//		Method:		me_nozap_driver_PL2303::releasePort
+//		Method:		osx_pl2303::releasePort
 //
 //		Inputs:		refCon - the Port (not used)
 //
@@ -1657,7 +1658,7 @@ IOReturn me_nozap_driver_PL2303::acquirePortGated( bool sleep, void *refCon )
 //
 /****************************************************************************************************/
 
-IOReturn me_nozap_driver_PL2303::releasePort(void *refCon)
+IOReturn osx_pl2303::releasePort(void *refCon)
 {
     IOReturn	ret;
     DEBUG_IOLog(4,"%s(%p)::releasePort\n", getName(), this);
@@ -1672,22 +1673,22 @@ IOReturn me_nozap_driver_PL2303::releasePort(void *refCon)
 
 /****************************************************************************************************/
 //
-//		Method:		me_nozap_driver_PL2303::releasePortAction
+//		Method:		osx_pl2303::releasePortAction
 //
 //		Desc:		Dummy pass through for releasePortGated.
 //
 /****************************************************************************************************/
 
-IOReturn me_nozap_driver_PL2303::releasePortAction(OSObject *owner, void *arg0, void *, void *, void *)
+IOReturn osx_pl2303::releasePortAction(OSObject *owner, void *arg0, void *, void *, void *)
 {
-    DEBUG_IOLog(4,"me_nozap_driver_PL2303::releasePortAction\n");
+    DEBUG_IOLog(4,"osx_pl2303::releasePortAction\n");
     
-    return ((me_nozap_driver_PL2303 *)owner)->releasePortGated((void *) arg0);
+    return ((osx_pl2303 *)owner)->releasePortGated((void *) arg0);
 }/* end releasePortAction */
 
 /****************************************************************************************************/
 //
-//		Method:		me_nozap_driver_PL2303::releasePortGated
+//		Method:		osx_pl2303::releasePortGated
 //
 //		Inputs:		refCon - the Port
 //
@@ -1699,7 +1700,7 @@ IOReturn me_nozap_driver_PL2303::releasePortAction(OSObject *owner, void *arg0, 
 //
 /****************************************************************************************************/
 
-IOReturn me_nozap_driver_PL2303::releasePortGated( void *refCon )
+IOReturn osx_pl2303::releasePortGated( void *refCon )
 {
     PortInfo_t          *port = (PortInfo_t *) refCon;
     UInt32              busyState;
@@ -1736,7 +1737,7 @@ IOReturn me_nozap_driver_PL2303::releasePortGated( void *refCon )
 
 /****************************************************************************************************/
 //
-//		Method:		me_nozap_driver_PL2303::setState
+//		Method:		osx_pl2303::setState
 //
 //		Inputs:		state - state to set
 //					mask - state mask
@@ -1748,7 +1749,7 @@ IOReturn me_nozap_driver_PL2303::releasePortGated( void *refCon )
 //
 /****************************************************************************************************/
 
-IOReturn me_nozap_driver_PL2303::setState(UInt32 state, UInt32 mask, void *refCon)
+IOReturn osx_pl2303::setState(UInt32 state, UInt32 mask, void *refCon)
 {
     PortInfo_t *port = (PortInfo_t *) refCon;
     IOReturn	ret;
@@ -1788,26 +1789,26 @@ IOReturn me_nozap_driver_PL2303::setState(UInt32 state, UInt32 mask, void *refCo
 
 /****************************************************************************************************/
 //
-//		Method:		me_nozap_driver_PL2303::setStateAction
+//		Method:		osx_pl2303::setStateAction
 //
 //		Desc:		Dummy pass through for setStateGated.
 //
 /****************************************************************************************************/
 
-IOReturn me_nozap_driver_PL2303::setStateAction(OSObject *owner, void *arg0, void *arg1, void *arg2, void *)
+IOReturn osx_pl2303::setStateAction(OSObject *owner, void *arg0, void *arg1, void *arg2, void *)
 {
-    DEBUG_IOLog(4,"me_nozap_driver_PL2303::setStateAction\n");
+    DEBUG_IOLog(4,"osx_pl2303::setStateAction\n");
     
 #if defined(__x86_64__)
-    return ((me_nozap_driver_PL2303 *)owner)->setStateGated((UInt64)arg0, (UInt64)arg1, (void *)arg2);
+    return ((osx_pl2303 *)owner)->setStateGated((UInt64)arg0, (UInt64)arg1, (void *)arg2);
 #else
-    return ((me_nozap_driver_PL2303 *)owner)->setStateGated((UInt32)arg0, (UInt32)arg1, (void *)arg2);
+    return ((osx_pl2303 *)owner)->setStateGated((UInt32)arg0, (UInt32)arg1, (void *)arg2);
 #endif
 }/* end setStateAction */
 
 /****************************************************************************************************/
 //
-//      Method:     me_nozap_driver_PL2303::setState
+//      Method:     osx_pl2303::setState
 //
 //      Inputs:     state - state to set, mask - state mask, refCon - the Port
 //
@@ -1824,7 +1825,7 @@ IOReturn me_nozap_driver_PL2303::setStateAction(OSObject *owner, void *arg0, voi
 //
 /****************************************************************************************************/
 
-IOReturn me_nozap_driver_PL2303::setStateGated( UInt32 state, UInt32 mask, void *refCon )
+IOReturn osx_pl2303::setStateGated( UInt32 state, UInt32 mask, void *refCon )
 {
     PortInfo_t *port = (PortInfo_t *) refCon;
     DEBUG_IOLog(4,"%s(%p)::setStateGated\n", getName(), this);
@@ -1851,7 +1852,7 @@ IOReturn me_nozap_driver_PL2303::setStateGated( UInt32 state, UInt32 mask, void 
 
 /****************************************************************************************************/
 //
-//		Method:		me_nozap_driver_PL2303::watchState
+//		Method:		osx_pl2303::watchState
 //
 //		Inputs:		state - state to watch for
 //				mask - state mask bits
@@ -1863,7 +1864,7 @@ IOReturn me_nozap_driver_PL2303::setStateGated( UInt32 state, UInt32 mask, void 
 //
 /****************************************************************************************************/
 
-IOReturn me_nozap_driver_PL2303::watchState(UInt32 *state, UInt32 mask, void *refCon)
+IOReturn osx_pl2303::watchState(UInt32 *state, UInt32 mask, void *refCon)
 {
     IOReturn 	ret;
     DEBUG_IOLog(4,"%s(%p)::watchState state %p mask  %p\n", getName(), this, *state, mask);
@@ -1883,27 +1884,27 @@ IOReturn me_nozap_driver_PL2303::watchState(UInt32 *state, UInt32 mask, void *re
 
 /****************************************************************************************************/
 //
-//		Method:		me_nozap_driver_PL2303::watchStateAction
+//		Method:		osx_pl2303::watchStateAction
 //
 //		Desc:		Dummy pass through for watchStateGated.
 //
 /****************************************************************************************************/
 
-IOReturn me_nozap_driver_PL2303::watchStateAction(OSObject *owner, void *arg0, void *arg1, void *, void *)
+IOReturn osx_pl2303::watchStateAction(OSObject *owner, void *arg0, void *arg1, void *, void *)
 {
-    DEBUG_IOLog(4,"me_nozap_driver_PL2303::watchStateAction\n");
+    DEBUG_IOLog(4,"osx_pl2303::watchStateAction\n");
     
 #if defined(__x86_64__)
-    return ((me_nozap_driver_PL2303 *)owner)->watchStateGated((UInt32 *)arg0, (UInt64)arg1);
+    return ((osx_pl2303 *)owner)->watchStateGated((UInt32 *)arg0, (UInt64)arg1);
 #else
-    return ((me_nozap_driver_PL2303 *)owner)->watchStateGated((UInt32 *)arg0, (UInt32)arg1);
+    return ((osx_pl2303 *)owner)->watchStateGated((UInt32 *)arg0, (UInt32)arg1);
 #endif
 }/* end watchStateAction */
 
 
 /****************************************************************************************************/
 //
-//      Method:     me_nozap_driver_PL2303::watchState
+//      Method:     osx_pl2303::watchState
 //
 //      Inputs:     state - state to watch for, mask - state mask bits, refCon - the Port
 //
@@ -1915,7 +1916,7 @@ IOReturn me_nozap_driver_PL2303::watchStateAction(OSObject *owner, void *arg0, v
 //
 /****************************************************************************************************/
 
-IOReturn me_nozap_driver_PL2303::watchStateGated( UInt32 *state, UInt32 mask)
+IOReturn osx_pl2303::watchStateGated( UInt32 *state, UInt32 mask)
 {
     IOReturn    ret = kIOReturnNotOpen;
     DEBUG_IOLog(4,"%s(%p)::watchStateGated state: %p mask: %p\n", getName(), this, *state, mask);
@@ -1935,7 +1936,7 @@ IOReturn me_nozap_driver_PL2303::watchStateGated( UInt32 *state, UInt32 mask)
 
 /****************************************************************************************************/
 //
-//      Method:     me_nozap_driver_PL2303::nextEvent
+//      Method:     osx_pl2303::nextEvent
 //
 //      Inputs:     refCon - the Port
 //
@@ -1945,7 +1946,7 @@ IOReturn me_nozap_driver_PL2303::watchStateGated( UInt32 *state, UInt32 mask)
 //
 /****************************************************************************************************/
 
-UInt32 me_nozap_driver_PL2303::nextEvent( void *refCon )
+UInt32 osx_pl2303::nextEvent( void *refCon )
 {
     DEBUG_IOLog(4,"%s(%p)::nextEvent\n", getName(), this);
     
@@ -1976,7 +1977,7 @@ UInt32 me_nozap_driver_PL2303::nextEvent( void *refCon )
 
 /****************************************************************************************************/
 //
-//		Method:		me_nozap_driver_PL2303::executeEvent
+//		Method:		osx_pl2303::executeEvent
 //
 //		Inputs:		event - The event
 //				data - any data associated with the event
@@ -1988,7 +1989,7 @@ UInt32 me_nozap_driver_PL2303::nextEvent( void *refCon )
 //
 /****************************************************************************************************/
 
-IOReturn me_nozap_driver_PL2303::executeEvent(UInt32 event, UInt32 data, void *refCon)
+IOReturn osx_pl2303::executeEvent(UInt32 event, UInt32 data, void *refCon)
 {
     IOReturn 	ret;
 	DEBUG_IOLog(4,"%s(%p)::executeEventAction\n", getName(), this);
@@ -2003,27 +2004,27 @@ IOReturn me_nozap_driver_PL2303::executeEvent(UInt32 event, UInt32 data, void *r
 
 /****************************************************************************************************/
 //
-//		Method:		me_nozap_driver_PL2303::executeEventAction
+//		Method:		osx_pl2303::executeEventAction
 //
 //		Desc:		Dummy pass through for executeEventGated.
 //
 /****************************************************************************************************/
 
-IOReturn me_nozap_driver_PL2303::executeEventAction(OSObject *owner, void *arg0, void *arg1, void *arg2, void *)
+IOReturn osx_pl2303::executeEventAction(OSObject *owner, void *arg0, void *arg1, void *arg2, void *)
 {
-	DEBUG_IOLog(4,"me_nozap_driver_PL2303::executeEventAction\n");
+	DEBUG_IOLog(4,"osx_pl2303::executeEventAction\n");
     
 #if defined(__x86_64__)
-	return ((me_nozap_driver_PL2303 *)owner)->executeEventGated((UInt64)arg0, (UInt64)arg1, (void *)arg2);
+	return ((osx_pl2303 *)owner)->executeEventGated((UInt64)arg0, (UInt64)arg1, (void *)arg2);
 #else
-    return ((me_nozap_driver_PL2303 *)owner)->executeEventGated((UInt32)arg0, (UInt32)arg1, (void *)arg2);
+    return ((osx_pl2303 *)owner)->executeEventGated((UInt32)arg0, (UInt32)arg1, (void *)arg2);
 #endif
 }/* end executeEventAction */
 
 
 /****************************************************************************************************/
 //
-//		Method:		me_nozap_driver_PL2303::executeEventGated
+//		Method:		osx_pl2303::executeEventGated
 //
 //
 //      Inputs:     event - The event, data - any data associated with the event, refCon - the Port
@@ -2035,7 +2036,7 @@ IOReturn me_nozap_driver_PL2303::executeEventAction(OSObject *owner, void *arg0,
 //
 /****************************************************************************************************/
 
-IOReturn me_nozap_driver_PL2303::executeEventGated( UInt32 event, UInt32 data, void *refCon )
+IOReturn osx_pl2303::executeEventGated( UInt32 event, UInt32 data, void *refCon )
 {
     PortInfo_t  *port = (PortInfo_t *) refCon;
     IOReturn    ret = kIOReturnSuccess;
@@ -2382,7 +2383,7 @@ IOReturn me_nozap_driver_PL2303::executeEventGated( UInt32 event, UInt32 data, v
 
 /****************************************************************************************************/
 //
-//		Method:		me_nozap_driver_PL2303::requestEvent
+//		Method:		osx_pl2303::requestEvent
 //
 //		Inputs:		event - The event
 //					refCon - the Port (not used)
@@ -2394,7 +2395,7 @@ IOReturn me_nozap_driver_PL2303::executeEventGated( UInt32 event, UInt32 data, v
 //
 /****************************************************************************************************/
 
-IOReturn me_nozap_driver_PL2303::requestEvent(UInt32 event, UInt32 *data, void *refCon)
+IOReturn osx_pl2303::requestEvent(UInt32 event, UInt32 *data, void *refCon)
 {
     IOReturn 	ret;
     
@@ -2410,26 +2411,26 @@ IOReturn me_nozap_driver_PL2303::requestEvent(UInt32 event, UInt32 *data, void *
 
 /****************************************************************************************************/
 //
-//		Method:		me_nozap_driver_PL2303::requestEventAction
+//		Method:		osx_pl2303::requestEventAction
 //
 //		Desc:		Dummy pass through for requestEventGated.
 //
 /****************************************************************************************************/
 
-IOReturn me_nozap_driver_PL2303::requestEventAction(OSObject *owner, void *arg0, void *arg1, void *arg2, void *)
+IOReturn osx_pl2303::requestEventAction(OSObject *owner, void *arg0, void *arg1, void *arg2, void *)
 {
-	DEBUG_IOLog(4,"me_nozap_driver_PL2303::requestEventAction\n");
+	DEBUG_IOLog(4,"osx_pl2303::requestEventAction\n");
     
 #if defined(__x86_64__)
-    return ((me_nozap_driver_PL2303 *)owner)->requestEventGated((UInt64)arg0, (UInt32 *)arg1, (void *)arg2);
+    return ((osx_pl2303 *)owner)->requestEventGated((UInt64)arg0, (UInt32 *)arg1, (void *)arg2);
 #else
-    return ((me_nozap_driver_PL2303 *)owner)->requestEventGated((UInt32)arg0, (UInt32 *)arg1, (void *)arg2);
+    return ((osx_pl2303 *)owner)->requestEventGated((UInt32)arg0, (UInt32 *)arg1, (void *)arg2);
 #endif
 }/* end requestEventAction */
 
 /****************************************************************************************************/
 //
-//      Method:     me_nozap_driver_PL2303::requestEvent
+//      Method:     osx_pl2303::requestEvent
 //
 //      Inputs:     event - The event, refCon - the Port
 //
@@ -2443,7 +2444,7 @@ IOReturn me_nozap_driver_PL2303::requestEventAction(OSObject *owner, void *arg0,
 //
 /****************************************************************************************************/
 
-IOReturn me_nozap_driver_PL2303::requestEventGated( UInt32 event, UInt32 *data, void *refCon )
+IOReturn osx_pl2303::requestEventGated( UInt32 event, UInt32 *data, void *refCon )
 {
     PortInfo_t  *port = (PortInfo_t *) refCon;
     IOReturn    returnValue = kIOReturnSuccess;
@@ -2596,7 +2597,7 @@ IOReturn me_nozap_driver_PL2303::requestEventGated( UInt32 event, UInt32 *data, 
 
 /****************************************************************************************************/
 //
-//      Method:     me_nozap_driver_PL2303::enqueueEvent
+//      Method:     osx_pl2303::enqueueEvent
 //
 //      Inputs:     event - The event, data - any data associated with the event,
 //                                              sleep - true (wait for it), false (don't), refCon - the Port
@@ -2607,7 +2608,7 @@ IOReturn me_nozap_driver_PL2303::requestEventGated( UInt32 event, UInt32 *data, 
 //
 /****************************************************************************************************/
 
-IOReturn me_nozap_driver_PL2303::enqueueEvent( UInt32 event, UInt32 data, bool sleep, void *refCon)
+IOReturn osx_pl2303::enqueueEvent( UInt32 event, UInt32 data, bool sleep, void *refCon)
 {
 	DEBUG_IOLog(2,"%s(%p)::enqueueEvent event: %p \n", getName(), this, data);
 	PortInfo_t  *port = (PortInfo_t *) refCon;
@@ -2665,7 +2666,7 @@ IOReturn me_nozap_driver_PL2303::enqueueEvent( UInt32 event, UInt32 data, bool s
 
 /****************************************************************************************************/
 //
-//      Method:     me_nozap_driver_PL2303::dequeueEvent
+//      Method:     osx_pl2303::dequeueEvent
 //
 //      Inputs:     sleep - true (wait for it), false (don't), refCon - the Port
 //
@@ -2675,7 +2676,7 @@ IOReturn me_nozap_driver_PL2303::enqueueEvent( UInt32 event, UInt32 data, bool s
 //
 /****************************************************************************************************/
 
-IOReturn me_nozap_driver_PL2303::dequeueEvent( UInt32 *event, UInt32 *data, bool sleep, void *refCon )
+IOReturn osx_pl2303::dequeueEvent( UInt32 *event, UInt32 *data, bool sleep, void *refCon )
 {
 	DEBUG_IOLog(4,"%s(%p)::dequeueEvent\n", getName(), this);
     
@@ -2698,19 +2699,19 @@ IOReturn me_nozap_driver_PL2303::dequeueEvent( UInt32 *event, UInt32 *data, bool
             return rtn;
         *data = Value;
         
-        DATA_IOLog(2,"me_nozap_driver_PL2303::dequeueEvent held=[0x%X]\n", Value );
+        DATA_IOLog(2,"osx_pl2303::dequeueEvent held=[0x%X]\n", Value );
         
         if(Value == 0xff) {
             while(getBytetoQueue(&fPort->RX, &Value) == kQueueEmpty){};
-            DATA_IOLog(2,"me_nozap_driver_PL2303::dequeueEvent purged=[0x%X]\n", Value );
+            DATA_IOLog(2,"osx_pl2303::dequeueEvent purged=[0x%X]\n", Value );
         }
         
         if(*event == PD_E_INTEGRITY_ERROR) {
             getBytetoQueue(&fPort->RX, &Value); // Purge marker
-            DATA_IOLog(2,"me_nozap_driver_PL2303::dequeueEvent purged=[0x%X]\n", Value );
+            DATA_IOLog(2,"osx_pl2303::dequeueEvent purged=[0x%X]\n", Value );
             while(getBytetoQueue(&fPort->RX, &Value) == kQueueEmpty)
                 IOSleep(BYTE_WAIT_PENALTY); // in case it is not yet cool
-            DATA_IOLog(2,"me_nozap_driver_PL2303::dequeueEvent purged=[0x%X]\n", Value );
+            DATA_IOLog(2,"osx_pl2303::dequeueEvent purged=[0x%X]\n", Value );
         }
 #endif
 		return kIOReturnSuccess;
@@ -2722,7 +2723,7 @@ IOReturn me_nozap_driver_PL2303::dequeueEvent( UInt32 *event, UInt32 *data, bool
 
 /****************************************************************************************************/
 //
-//		Method:		me_nozap_driver_PL2303::enqueueData
+//		Method:		osx_pl2303::enqueueData
 //
 //		Inputs:		buffer - the data
 //					size - number of bytes
@@ -2736,7 +2737,7 @@ IOReturn me_nozap_driver_PL2303::dequeueEvent( UInt32 *event, UInt32 *data, bool
 //
 /****************************************************************************************************/
 
-IOReturn me_nozap_driver_PL2303::enqueueData(UInt8 *buffer, UInt32 size, UInt32 *count, bool sleep, void *refCon)
+IOReturn osx_pl2303::enqueueData(UInt8 *buffer, UInt32 size, UInt32 *count, bool sleep, void *refCon)
 {
     IOReturn 	ret;
     
@@ -2753,25 +2754,25 @@ IOReturn me_nozap_driver_PL2303::enqueueData(UInt8 *buffer, UInt32 size, UInt32 
 
 /****************************************************************************************************/
 //
-//		Method:		me_nozap_driver_PL2303::enqueueDatatAction
+//		Method:		osx_pl2303::enqueueDatatAction
 //
 //		Desc:		Dummy pass through for equeueDataGated.
 //
 /****************************************************************************************************/
 
-IOReturn me_nozap_driver_PL2303::enqueueDataAction(OSObject *owner, void *arg0, void *arg1, void *arg2, void *arg3)
+IOReturn osx_pl2303::enqueueDataAction(OSObject *owner, void *arg0, void *arg1, void *arg2, void *arg3)
 {
 #if defined(__x86_64__)
-    return ((me_nozap_driver_PL2303 *)owner)->enqueueDataGated((UInt8 *)arg0, (UInt64)arg1, (UInt32 *)arg2, (bool)arg3);
+    return ((osx_pl2303 *)owner)->enqueueDataGated((UInt8 *)arg0, (UInt64)arg1, (UInt32 *)arg2, (bool)arg3);
 #else
-    return ((me_nozap_driver_PL2303 *)owner)->enqueueDataGated((UInt8 *)arg0, (UInt32)arg1, (UInt32 *)arg2, (bool)arg3);
+    return ((osx_pl2303 *)owner)->enqueueDataGated((UInt8 *)arg0, (UInt32)arg1, (UInt32 *)arg2, (bool)arg3);
 #endif
 }/* end enqueueDataAction */
 
 /****************************************************************************************************/
 //
 //
-//      Method:     me_nozap_driver_PL2303::enqueueData
+//      Method:     osx_pl2303::enqueueData
 //
 //      Inputs:     buffer - the data, size - number of bytes, sleep - true (wait for it), false (don't),
 //                                                                                      refCon - the Port
@@ -2792,7 +2793,7 @@ IOReturn me_nozap_driver_PL2303::enqueueDataAction(OSObject *owner, void *arg0, 
 //
 /****************************************************************************************************/
 
-IOReturn me_nozap_driver_PL2303::enqueueDataGated( UInt8 *buffer, UInt32 size, UInt32 *count, bool sleep)
+IOReturn osx_pl2303::enqueueDataGated( UInt8 *buffer, UInt32 size, UInt32 *count, bool sleep)
 {
     UInt32      state = PD_S_TXQ_LOW_WATER;
     IOReturn    rtn = kIOReturnSuccess;
@@ -2869,7 +2870,7 @@ IOReturn me_nozap_driver_PL2303::enqueueDataGated( UInt8 *buffer, UInt32 size, U
 
 /****************************************************************************************************/
 //
-//		Method:		me_nozap_driver_PL2303::dequeueData
+//		Method:		osx_pl2303::dequeueData
 //
 //		Inputs:		size - buffer size
 //					min - minimum bytes required
@@ -2883,7 +2884,7 @@ IOReturn me_nozap_driver_PL2303::enqueueDataGated( UInt8 *buffer, UInt32 size, U
 //
 /****************************************************************************************************/
 
-IOReturn me_nozap_driver_PL2303::dequeueData(UInt8 *buffer, UInt32 size, UInt32 *count, UInt32 min, void *refCon)
+IOReturn osx_pl2303::dequeueData(UInt8 *buffer, UInt32 size, UInt32 *count, UInt32 min, void *refCon)
 {
     IOReturn 	ret;
 	DEBUG_IOLog(4,"%s(%p)::dequeueData\n", getName(), this);
@@ -2902,26 +2903,26 @@ IOReturn me_nozap_driver_PL2303::dequeueData(UInt8 *buffer, UInt32 size, UInt32 
 
 /****************************************************************************************************/
 //
-//		Method:		me_nozap_driver_PL2303::dequeueDatatAction
+//		Method:		osx_pl2303::dequeueDatatAction
 //
 //		Desc:		Dummy pass through for equeueDataGated.
 //
 /****************************************************************************************************/
 
-IOReturn me_nozap_driver_PL2303::dequeueDataAction(OSObject *owner, void *arg0, void *arg1, void *arg2, void *arg3)
+IOReturn osx_pl2303::dequeueDataAction(OSObject *owner, void *arg0, void *arg1, void *arg2, void *arg3)
 {
-	DEBUG_IOLog(4,"me_nozap_driver_PL2303::dequeueDataAction\n");
+	DEBUG_IOLog(4,"osx_pl2303::dequeueDataAction\n");
     
 #if defined(__x86_64__)
-    return ((me_nozap_driver_PL2303 *)owner)->dequeueDataGated((UInt8 *)arg0, (UInt64)arg1, (UInt32 *)arg2, (UInt64)arg3);
+    return ((osx_pl2303 *)owner)->dequeueDataGated((UInt8 *)arg0, (UInt64)arg1, (UInt32 *)arg2, (UInt64)arg3);
 #else
-    return ((me_nozap_driver_PL2303 *)owner)->dequeueDataGated((UInt8 *)arg0, (UInt32)arg1, (UInt32 *)arg2, (UInt32)arg3);
+    return ((osx_pl2303 *)owner)->dequeueDataGated((UInt8 *)arg0, (UInt32)arg1, (UInt32 *)arg2, (UInt32)arg3);
 #endif
 }/* end dequeueDataAction */
 
 /****************************************************************************************************/
 //
-//      Method:     me_nozap_driver_PL2303::dequeueData
+//      Method:     osx_pl2303::dequeueData
 //
 //      Inputs:     size - buffer size, min - minimum bytes required, refCon - the Port
 //
@@ -2946,7 +2947,7 @@ IOReturn me_nozap_driver_PL2303::dequeueDataAction(OSObject *owner, void *arg0, 
 //
 /****************************************************************************************************/
 
-IOReturn me_nozap_driver_PL2303::dequeueDataGated( UInt8 *buffer, UInt32 size, UInt32 *count, UInt32 min )
+IOReturn osx_pl2303::dequeueDataGated( UInt8 *buffer, UInt32 size, UInt32 *count, UInt32 min )
 {
     IOReturn    rtn = kIOReturnSuccess;
     UInt32      state = 0;
@@ -2980,10 +2981,10 @@ IOReturn me_nozap_driver_PL2303::dequeueDataGated( UInt8 *buffer, UInt32 size, U
             IOLog("%s(%p)::dequeueDataGated - INTERRUPTED while reading\n", getName(), this );
             return rtn;
         }
-        DATA_IOLog(2,"me_nozap_driver_PL2303::dequeueDataGated held=[0x%X]\n", Value );
+        DATA_IOLog(2,"osx_pl2303::dequeueDataGated held=[0x%X]\n", Value );
         if(Value == 0xff) {
             while(getBytetoQueue(Queue, &Value) == kQueueEmpty){}; // Read double 0xff
-            DATA_IOLog(2,"me_nozap_driver_PL2303::dequeueDataGated purged=[0x%X]\n", Value );
+            DATA_IOLog(2,"osx_pl2303::dequeueDataGated purged=[0x%X]\n", Value );
         }
         *(buffer++) = Value;
         ++(*count);
@@ -3035,10 +3036,10 @@ IOReturn me_nozap_driver_PL2303::dequeueDataGated( UInt8 *buffer, UInt32 size, U
                 IOLog("%s(%p)::dequeueDataGated - INTERRUPTED while reading\n", getName(), this );
                 return rtn;
             }
-            DATA_IOLog(2,"me_nozap_driver_PL2303::dequeueDataGated held=[0x%X]\n", Value );
+            DATA_IOLog(2,"osx_pl2303::dequeueDataGated held=[0x%X]\n", Value );
             if(Value == 0xff) {
                 while(getBytetoQueue(Queue, &Value) == kQueueEmpty){}; // Read double 0xff
-                DATA_IOLog(2,"me_nozap_driver_PL2303::dequeueDataGated purged=[0x%X]\n", Value );
+                DATA_IOLog(2,"osx_pl2303::dequeueDataGated purged=[0x%X]\n", Value );
             }
             *(buffer++) = Value;
             ++(*count);
@@ -3060,7 +3061,7 @@ IOReturn me_nozap_driver_PL2303::dequeueDataGated( UInt8 *buffer, UInt32 size, U
 
 /****************************************************************************************************/
 //
-//		Method:		me_nozap_driver_PL2303::getState
+//		Method:		osx_pl2303::getState
 //
 //		Inputs:		refCon - the Port (not used)
 //
@@ -3070,7 +3071,7 @@ IOReturn me_nozap_driver_PL2303::dequeueDataGated( UInt8 *buffer, UInt32 size, U
 //
 /****************************************************************************************************/
 
-UInt32 me_nozap_driver_PL2303::getState(void *refCon)
+UInt32 osx_pl2303::getState(void *refCon)
 {
 	DEBUG_IOLog(6,"%s(%p)::getState\n", getName(), this);
     
@@ -3091,7 +3092,7 @@ UInt32 me_nozap_driver_PL2303::getState(void *refCon)
 
 /****************************************************************************************************/
 //
-//      Method:     me_nozap_driver_PL2303::StartTransmission
+//      Method:     osx_pl2303::StartTransmission
 //
 //      Inputs:     control_length - Length of control data
 //                  control_buffer - Control data
@@ -3105,7 +3106,7 @@ UInt32 me_nozap_driver_PL2303::getState(void *refCon)
 //
 /****************************************************************************************************/
 
-IOReturn me_nozap_driver_PL2303::startTransmit(UInt32 control_length, UInt8 *control_buffer, UInt32 data_length, UInt8 *data_buffer)
+IOReturn osx_pl2303::startTransmit(UInt32 control_length, UInt8 *control_buffer, UInt32 data_length, UInt8 *data_buffer)
 {
     IOReturn    ior;
     
@@ -3136,7 +3137,7 @@ IOReturn me_nozap_driver_PL2303::startTransmit(UInt32 control_length, UInt8 *con
 	buflen = fCount;
 	buf = &fPipeOutBuffer[0];
 	
-	DATA_IOLog(1,"me_nozap_driver_PL2303: Send (bytes %d): ",fCount);
+	DATA_IOLog(1,"osx_pl2303: Send (bytes %d): ",fCount);
 	while ( buflen ){
 		unsigned char c = *buf;
 		DATA_IOLog(1,"[%02x] ",c);
@@ -3153,7 +3154,7 @@ IOReturn me_nozap_driver_PL2303::startTransmit(UInt32 control_length, UInt8 *con
 
 /****************************************************************************************************/
 //
-//      Method:     me_nozap_driver_PL2303::dataWriteComplete
+//      Method:     osx_pl2303::dataWriteComplete
 //
 //      Inputs:     obj - me, param - parameter block(the Port), rc - return code, remaining - what's left
 //
@@ -3163,11 +3164,11 @@ IOReturn me_nozap_driver_PL2303::startTransmit(UInt32 control_length, UInt8 *con
 //
 /****************************************************************************************************/
 
-void me_nozap_driver_PL2303::dataWriteComplete( void *obj, void *param, IOReturn rc, UInt32 remaining )
+void osx_pl2303::dataWriteComplete( void *obj, void *param, IOReturn rc, UInt32 remaining )
 {
     
-    me_nozap_driver_PL2303  *me = (me_nozap_driver_PL2303*)obj;
-	DEBUG_IOLog(1,"me_nozap_driver_PL2303::dataWriteComplete return code c: %d, fcount: %d,  remaining: %d\n", rc, me->fCount,remaining );
+    osx_pl2303  *me = (osx_pl2303*)obj;
+	DEBUG_IOLog(1,"osx_pl2303::dataWriteComplete return code c: %d, fcount: %d,  remaining: %d\n", rc, me->fCount,remaining );
     
     // Boolean done = true;                // write really finished?  // use is commented out below.
     me->fWriteActive = false;
@@ -3210,7 +3211,7 @@ void me_nozap_driver_PL2303::dataWriteComplete( void *obj, void *param, IOReturn
 
 /****************************************************************************************************/
 //
-//      Method:     me_nozap_driver_PL2303::interruptReadComplete
+//      Method:     osx_pl2303::interruptReadComplete
 //
 //      Inputs:     obj - me, param - parameter block(the Port), rc - return code, remaining - what's left
 //                                                                                  (whose idea was that?)
@@ -3222,13 +3223,13 @@ void me_nozap_driver_PL2303::dataWriteComplete( void *obj, void *param, IOReturn
 //
 /****************************************************************************************************/
 
-void me_nozap_driver_PL2303::interruptReadComplete( void *obj, void *param, IOReturn rc, UInt32 remaining )
+void osx_pl2303::interruptReadComplete( void *obj, void *param, IOReturn rc, UInt32 remaining )
 {
-	DEBUG_IOLog(1,"me_nozap_driver_PL2303::interruptReadComplete" );
+	DEBUG_IOLog(1,"osx_pl2303::interruptReadComplete" );
 	UInt8 status_idx = kUART_STATE;
 	UInt8 length = INTERRUPT_BUFF_SIZE;
 	UInt32 stat = 0;
-    me_nozap_driver_PL2303  *me = (me_nozap_driver_PL2303*)obj;
+    osx_pl2303  *me = (osx_pl2303*)obj;
 	PortInfo_t            *port = (PortInfo_t*)param;
     UInt32      dLen;
 	
@@ -3237,12 +3238,12 @@ void me_nozap_driver_PL2303::interruptReadComplete( void *obj, void *param, IORe
 		if ( (me->fpDevice->GetVendorID() == SIEMENS_VENDOR_ID ) && (me->fpDevice->GetProductID() == SIEMENS_PRODUCT_ID_X65) ) {
             status_idx = 0;
             length = 1;
-            DEBUG_IOLog( 3, "me_nozap_driver_PL2303::interruptReadComplete interrupt Buff size = 1\n");
+            DEBUG_IOLog( 3, "osx_pl2303::interruptReadComplete interrupt Buff size = 1\n");
         }
 		dLen = length - remaining;
     	if (dLen != length)
 		{
-			DEBUG_IOLog(1,"me_nozap_driver_PL2303::interruptReadComplete wrong buffersize");
+			DEBUG_IOLog(1,"osx_pl2303::interruptReadComplete wrong buffersize");
 		} else {
             
             
@@ -3252,7 +3253,7 @@ void me_nozap_driver_PL2303::interruptReadComplete( void *obj, void *param, IORe
 			buf = &me->fpinterruptPipeBuffer[0];
 #ifdef DATALOG
             
-			DATA_IOLog(1,"me_nozap_driver_PL2303: Interrupt: ");
+			DATA_IOLog(1,"osx_pl2303: Interrupt: ");
 			unsigned char c = buf[status_idx];
 		    DATA_IOLog(1,"[%02x] ",c);
 #endif
@@ -3265,11 +3266,11 @@ void me_nozap_driver_PL2303::interruptReadComplete( void *obj, void *param, IORe
             // ++ Parity check
             if(buf[status_idx] & kParityError) {
 #if FIX_PARITY_PROCESSING
-                DEBUG_IOLog(5,"me_nozap_driver_PL2303::interruptReadComplete PARITY ERROR\n");
+                DEBUG_IOLog(5,"osx_pl2303::interruptReadComplete PARITY ERROR\n");
                 me->addBytetoQueue(&me->fPort->RX, 0xff); // Internal parity error marker
                 me->addBytetoQueue(&me->fPort->RX, 0x00); // Internal parity error marker
 #else
-                DEBUG_IOLog(5,"me_nozap_driver_PL2303::interruptReadComplete PARITY ERROR (ignored)\n");
+                DEBUG_IOLog(5,"osx_pl2303::interruptReadComplete PARITY ERROR (ignored)\n");
 #endif
             }
             me->setStateGated( stat, kHandshakeInMask , port); // refresh linestate in State
@@ -3284,7 +3285,7 @@ void me_nozap_driver_PL2303::interruptReadComplete( void *obj, void *param, IORe
         me->checkQueues( port );
 #endif
     } else {
-        DEBUG_IOLog(1,"me_nozap_driver_PL2303::interruptReadComplete wrong return code: %p", rc );
+        DEBUG_IOLog(1,"osx_pl2303::interruptReadComplete wrong return code: %p", rc );
 	}
     return;
 }/* end interruptReadComplete */
@@ -3293,7 +3294,7 @@ void me_nozap_driver_PL2303::interruptReadComplete( void *obj, void *param, IORe
 
 /****************************************************************************************************/
 //
-//      Method:     me_nozap_driver_PL2303::dataReadComplete
+//      Method:     osx_pl2303::dataReadComplete
 //
 //      Inputs:     obj - me, param - parameter block(the Port), rc - return code, remaining - what's left
 //
@@ -3303,10 +3304,10 @@ void me_nozap_driver_PL2303::interruptReadComplete( void *obj, void *param, IORe
 //
 /****************************************************************************************************/
 
-void me_nozap_driver_PL2303::dataReadComplete( void *obj, void *param, IOReturn rc, UInt32 remaining )
+void osx_pl2303::dataReadComplete( void *obj, void *param, IOReturn rc, UInt32 remaining )
 {
-	DEBUG_IOLog(4,"me_nozap_driver_PL2303::dataReadComplete\n");
-    me_nozap_driver_PL2303  *me = (me_nozap_driver_PL2303*)obj;
+	DEBUG_IOLog(4,"osx_pl2303::dataReadComplete\n");
+    osx_pl2303  *me = (osx_pl2303*)obj;
     PortInfo_t      *port = (PortInfo_t*)param;
     UInt16          dtlength;
     IOReturn        ior = kIOReturnSuccess;
@@ -3322,7 +3323,7 @@ void me_nozap_driver_PL2303::dataReadComplete( void *obj, void *param, IOReturn 
 			UInt32 buflen;
 			buflen = dtlength;
 			buf = &me->fPipeInBuffer[0];
-			DATA_IOLog(1,"me_nozap_driver_PL2303: Receive: ");
+			DATA_IOLog(1,"osx_pl2303: Receive: ");
 			while ( buflen ){
 				unsigned char c = *buf;
 				DATA_IOLog(1,"[%02x] ",c);
@@ -3334,13 +3335,13 @@ void me_nozap_driver_PL2303::dataReadComplete( void *obj, void *param, IOReturn 
             
 #if FIX_PARITY_PROCESSING
             if ( !(me->fPort && me->fPort->serialRequestLock ) ) goto Fail;
-            DEBUG_IOLog(2,"me_nozap_driver_PL2303::dataReadComplete IOLockLock( port->serialRequestLock );\n" );
+            DEBUG_IOLog(2,"osx_pl2303::dataReadComplete IOLockLock( port->serialRequestLock );\n" );
             
             IOLockLock( me->fPort->serialRequestLock );
             
             clock_get_system_nanotime(&me->_fReadTimestampSecs, &me->_fReadTimestampNanosecs);
             
-            DEBUG_IOLog(2,"me_nozap_driver_PL2303::dataReadComplete IOLockUnLock( port->serialRequestLock ); kQueueNoError\n" );
+            DEBUG_IOLog(2,"osx_pl2303::dataReadComplete IOLockUnLock( port->serialRequestLock ); kQueueNoError\n" );
             
             IOLockUnlock( me->fPort->serialRequestLock);
 #endif
@@ -3356,13 +3357,13 @@ void me_nozap_driver_PL2303::dataReadComplete( void *obj, void *param, IOReturn 
 			me->checkQueues( port );
 			return;
 		} else {
-			DEBUG_IOLog(4,"me_nozap_driver_PL2303::dataReadComplete dataReadComplete - queueing bulk read failed\n");
+			DEBUG_IOLog(4,"osx_pl2303::dataReadComplete dataReadComplete - queueing bulk read failed\n");
 		}
 		
 	} else {
     Fail:
 		/* Read returned with error */
-		DEBUG_IOLog(4,"me_nozap_driver_PL2303::dataReadComplete - io err %x\n",rc );
+		DEBUG_IOLog(4,"osx_pl2303::dataReadComplete - io err %x\n",rc );
 		
 	}
 	
@@ -3372,7 +3373,7 @@ void me_nozap_driver_PL2303::dataReadComplete( void *obj, void *param, IOReturn 
 
 /****************************************************************************************************/
 //
-//      Method:     me_nozap_driver_PL2303::allocateRingBuffer
+//      Method:     osx_pl2303::allocateRingBuffer
 //
 //      Inputs:     Queue - the specified queue to allocate, BufferSize - size to allocate
 //
@@ -3382,7 +3383,7 @@ void me_nozap_driver_PL2303::dataReadComplete( void *obj, void *param, IOReturn 
 //
 /****************************************************************************************************/
 
-bool me_nozap_driver_PL2303::allocateRingBuffer( CirQueue *Queue, size_t BufferSize )
+bool osx_pl2303::allocateRingBuffer( CirQueue *Queue, size_t BufferSize )
 {
     UInt8       *Buffer;
 	
@@ -3403,7 +3404,7 @@ bool me_nozap_driver_PL2303::allocateRingBuffer( CirQueue *Queue, size_t BufferS
 
 /****************************************************************************************************/
 //
-//      Method:     me_nozap_driver_PL2303::freeRingBuffer
+//      Method:     osx_pl2303::freeRingBuffer
 //
 //      Inputs:     Queue - the specified queue to free
 //
@@ -3414,7 +3415,7 @@ bool me_nozap_driver_PL2303::allocateRingBuffer( CirQueue *Queue, size_t BufferS
 //
 /****************************************************************************************************/
 
-void me_nozap_driver_PL2303::freeRingBuffer( CirQueue *Queue )
+void osx_pl2303::freeRingBuffer( CirQueue *Queue )
 {
     DEBUG_IOLog(4,"%s(%p)::freeRingBuffer\n", getName(), this );
     if( !(Queue->Start) )  goto Bogus;
@@ -3432,7 +3433,7 @@ Bogus:
 
 /****************************************************************************************************/
 //
-//      Method:     me_nozap_driver_PL2303::SetSpeed
+//      Method:     osx_pl2303::SetSpeed
 //
 //      Inputs:     brate - the requested baud rate
 //
@@ -3442,7 +3443,7 @@ Bogus:
 //
 /****************************************************************************************************/
 
-IOReturn me_nozap_driver_PL2303::setSerialConfiguration( void )
+IOReturn osx_pl2303::setSerialConfiguration( void )
 {
 	IOReturn rtn;
 	IOUSBDevRequest request;
@@ -3623,7 +3624,7 @@ IOReturn me_nozap_driver_PL2303::setSerialConfiguration( void )
 
 /****************************************************************************************************/
 //
-//      Method:     me_nozap_driver_PL2303::AddBytetoQueue
+//      Method:     osx_pl2303::AddBytetoQueue
 //
 //      Inputs:     Queue - the queue to be added to
 //
@@ -3633,20 +3634,20 @@ IOReturn me_nozap_driver_PL2303::setSerialConfiguration( void )
 //
 /****************************************************************************************************/
 
-QueueStatus me_nozap_driver_PL2303::addBytetoQueue( CirQueue *Queue, char Value )
+QueueStatus osx_pl2303::addBytetoQueue( CirQueue *Queue, char Value )
 {
     /* Check to see if there is space by comparing the next pointer,    */
     /* with the last, If they match we are either Empty or full, so     */
     /* check the InQueue of being zero.                 */
-    DEBUG_IOLog(4,"me_nozap_driver_PL2303(%p)::AddBytetoQueue\n", this );
+    DEBUG_IOLog(4,"osx_pl2303(%p)::AddBytetoQueue\n", this );
 	
     if ( !(fPort && fPort->serialRequestLock ) ) goto Fail;
-	DEBUG_IOLog(2,"me_nozap_driver_PL2303::addBytetoQueue IOLockLock( port->serialRequestLock );\n" );
+	DEBUG_IOLog(2,"osx_pl2303::addBytetoQueue IOLockLock( port->serialRequestLock );\n" );
 	
     IOLockLock( fPort->serialRequestLock );
 	
     if ( (Queue->NextChar == Queue->LastChar) && Queue->InQueue ) {
-		DEBUG_IOLog(2,"me_nozap_driver_PL2303::addBytetoQueue IOLockUnLock( port->serialRequestLock ); kQueueFull\n" );
+		DEBUG_IOLog(2,"osx_pl2303::addBytetoQueue IOLockUnLock( port->serialRequestLock ); kQueueFull\n" );
         
 		IOLockUnlock( fPort->serialRequestLock);
 		return kQueueFull;
@@ -3660,7 +3661,7 @@ QueueStatus me_nozap_driver_PL2303::addBytetoQueue( CirQueue *Queue, char Value 
     if ( Queue->NextChar >= Queue->End )
 		Queue->NextChar =  Queue->Start;
     
-	DEBUG_IOLog(2,"me_nozap_driver_PL2303::addBytetoQueue IOLockUnLock( port->serialRequestLock ); kQueueNoError\n" );
+	DEBUG_IOLog(2,"osx_pl2303::addBytetoQueue IOLockUnLock( port->serialRequestLock ); kQueueNoError\n" );
 	
     IOLockUnlock( fPort->serialRequestLock);
     return kQueueNoError;
@@ -3672,7 +3673,7 @@ Fail:
 
 /****************************************************************************************************/
 //
-//      Method:     me_nozap_driver_PL2303::GetBytetoQueue
+//      Method:     osx_pl2303::GetBytetoQueue
 //
 //      Inputs:     Queue - the queue to be removed from
 //
@@ -3682,19 +3683,19 @@ Fail:
 //
 /****************************************************************************************************/
 
-QueueStatus me_nozap_driver_PL2303::getBytetoQueue( CirQueue *Queue, UInt8 *Value )
+QueueStatus osx_pl2303::getBytetoQueue( CirQueue *Queue, UInt8 *Value )
 {
     DEBUG_IOLog(4,"%s(%p)::GetBytetoQueue\n", getName(), this );
 	
     if( !(fPort && fPort->serialRequestLock) ) goto Fail;
-	DEBUG_IOLog(2,"me_nozap_driver_PL2303::getBytetoQueue IOLockLock( port->serialRequestLock ); \n" );
+	DEBUG_IOLog(2,"osx_pl2303::getBytetoQueue IOLockLock( port->serialRequestLock ); \n" );
     
     IOLockLock( fPort->serialRequestLock );
 	
 	/* Check to see if the queue has something in it.   */
 	
     if ( (Queue->NextChar == Queue->LastChar) && !Queue->InQueue ) {
-		DEBUG_IOLog(2,"me_nozap_driver_PL2303::getBytetoQueue IOLockUnLock( port->serialRequestLock ); kQueueEmpty\n" );
+		DEBUG_IOLog(2,"osx_pl2303::getBytetoQueue IOLockUnLock( port->serialRequestLock ); kQueueEmpty\n" );
         
 		IOLockUnlock(fPort->serialRequestLock);
 		return kQueueEmpty;
@@ -3708,7 +3709,7 @@ QueueStatus me_nozap_driver_PL2303::getBytetoQueue( CirQueue *Queue, UInt8 *Valu
         clock_get_system_nanotime(&secs, &nanosecs);
         if( secs == _fReadTimestampSecs && nanosecs < _fReadTimestampNanosecs + LAST_BYTE_COOLDOWN ) {
             // Pretend it is empty
-            DEBUG_IOLog(2,"me_nozap_driver_PL2303::getBytetoQueue IOLockUnLock( port->serialRequestLock ); (cooldown - queue empty)\n" );
+            DEBUG_IOLog(2,"osx_pl2303::getBytetoQueue IOLockUnLock( port->serialRequestLock ); (cooldown - queue empty)\n" );
             
             IOLockUnlock(fPort->serialRequestLock);
             return kQueueEmpty;
@@ -3724,7 +3725,7 @@ QueueStatus me_nozap_driver_PL2303::getBytetoQueue( CirQueue *Queue, UInt8 *Valu
     if ( Queue->LastChar >= Queue->End )
 		Queue->LastChar =  Queue->Start;
 	
-	DEBUG_IOLog(2,"me_nozap_driver_PL2303::getBytetoQueue IOLockUnLock( port->serialRequestLock ); kQueueNoError\n" );
+	DEBUG_IOLog(2,"osx_pl2303::getBytetoQueue IOLockUnLock( port->serialRequestLock ); kQueueNoError\n" );
 	
     IOLockUnlock(fPort->serialRequestLock);
     return kQueueNoError;
@@ -3736,7 +3737,7 @@ Fail:
 
 /****************************************************************************************************/
 //
-//      Method:     me_nozap_driver_PL2303::peekBytefromQueue
+//      Method:     osx_pl2303::peekBytefromQueue
 //
 //      Inputs:     Queue - the queue to be peeked into, offset - index of byte to be peeked
 //
@@ -3746,19 +3747,19 @@ Fail:
 //
 /****************************************************************************************************/
 
-QueueStatus me_nozap_driver_PL2303::peekBytefromQueue( CirQueue *Queue, UInt8 *Value, size_t offset = 0)
+QueueStatus osx_pl2303::peekBytefromQueue( CirQueue *Queue, UInt8 *Value, size_t offset = 0)
 {
     DEBUG_IOLog(4,"%s(%p)::peekBytefromQueue\n", getName(), this );
     
     if( !(fPort && fPort->serialRequestLock) ) goto Fail;
-	DEBUG_IOLog(2,"me_nozap_driver_PL2303::peekBytefromQueue IOLockLock( port->serialRequestLock ); \n" );
+	DEBUG_IOLog(2,"osx_pl2303::peekBytefromQueue IOLockLock( port->serialRequestLock ); \n" );
     
     IOLockLock( fPort->serialRequestLock );
     
 	/* Check to see if the queue has something in it.   */
     
     if ( ((Queue->NextChar == Queue->LastChar) && !Queue->InQueue) || Queue->InQueue <= offset ) {
-		DEBUG_IOLog(2,"me_nozap_driver_PL2303::peekBytefromQueue IOLockUnLock( port->serialRequestLock ); kQueueEmpty\n" );
+		DEBUG_IOLog(2,"osx_pl2303::peekBytefromQueue IOLockUnLock( port->serialRequestLock ); kQueueEmpty\n" );
         
 		IOLockUnlock(fPort->serialRequestLock);
 		return kQueueEmpty;
@@ -3769,11 +3770,11 @@ QueueStatus me_nozap_driver_PL2303::peekBytefromQueue( CirQueue *Queue, UInt8 *V
     } else
         *Value = Queue->LastChar[offset];
     
-	DEBUG_IOLog(2,"me_nozap_driver_PL2303::peekBytefromQueue IOLockUnLock( port->serialRequestLock ); kQueueNoError\n" );
+	DEBUG_IOLog(2,"osx_pl2303::peekBytefromQueue IOLockUnLock( port->serialRequestLock ); kQueueNoError\n" );
     
     IOLockUnlock(fPort->serialRequestLock);
     
-	DEBUG_IOLog(5,"me_nozap_driver_PL2303::peekBytefromQueue offset = %u [0x%02x]\n", (unsigned) offset, *Value );
+	DEBUG_IOLog(5,"osx_pl2303::peekBytefromQueue offset = %u [0x%02x]\n", (unsigned) offset, *Value );
     return kQueueNoError;
     
 Fail:
@@ -3783,7 +3784,7 @@ Fail:
 
 /****************************************************************************************************/
 //
-//      Method:     me_nozap_driver_PL2303::InitQueue
+//      Method:     osx_pl2303::InitQueue
 //
 //      Inputs:     Queue - the queue to be initialized, Buffer - the buffer, size - length of buffer
 //
@@ -3793,7 +3794,7 @@ Fail:
 //
 /****************************************************************************************************/
 
-QueueStatus me_nozap_driver_PL2303::initQueue( CirQueue *Queue, UInt8 *Buffer, size_t Size )
+QueueStatus osx_pl2303::initQueue( CirQueue *Queue, UInt8 *Buffer, size_t Size )
 {
     DEBUG_IOLog(4,"%s(%p)::InitQueue\n", getName(), this );
     
@@ -3812,7 +3813,7 @@ QueueStatus me_nozap_driver_PL2303::initQueue( CirQueue *Queue, UInt8 *Buffer, s
 
 /****************************************************************************************************/
 //
-//      Method:     me_nozap_driver_PL2303::CloseQueue
+//      Method:     osx_pl2303::CloseQueue
 //
 //      Inputs:     Queue - the queue to be closed
 //
@@ -3822,7 +3823,7 @@ QueueStatus me_nozap_driver_PL2303::initQueue( CirQueue *Queue, UInt8 *Buffer, s
 //
 /****************************************************************************************************/
 
-QueueStatus me_nozap_driver_PL2303::closeQueue( CirQueue *Queue )
+QueueStatus osx_pl2303::closeQueue( CirQueue *Queue )
 {
     DEBUG_IOLog(4,"%s(%p)::CloseQueue\n", getName(), this );
 	
@@ -3838,7 +3839,7 @@ QueueStatus me_nozap_driver_PL2303::closeQueue( CirQueue *Queue )
 
 /****************************************************************************************************/
 //
-//      Method:     me_nozap_driver_PL2303::Flush
+//      Method:     osx_pl2303::Flush
 //
 //      Inputs:     Queue - the queue to be flushesd
 //
@@ -3848,7 +3849,7 @@ QueueStatus me_nozap_driver_PL2303::closeQueue( CirQueue *Queue )
 //
 /****************************************************************************************************/
 
-QueueStatus me_nozap_driver_PL2303::flush( CirQueue *Queue )
+QueueStatus osx_pl2303::flush( CirQueue *Queue )
 {
     DEBUG_IOLog(4,"%s(%p)::flush\n", getName(), this );
 	
@@ -3860,7 +3861,7 @@ QueueStatus me_nozap_driver_PL2303::flush( CirQueue *Queue )
 
 /****************************************************************************************************/
 //
-//      Method:     me_nozap_driver_PL2303::AddtoQueue
+//      Method:     osx_pl2303::AddtoQueue
 //
 //      Inputs:     Queue - the queue to be added to, Buffer - data to add, Size - length of data
 //
@@ -3870,7 +3871,7 @@ QueueStatus me_nozap_driver_PL2303::flush( CirQueue *Queue )
 //
 /****************************************************************************************************/
 
-size_t me_nozap_driver_PL2303::addtoQueue( CirQueue *Queue, UInt8 *Buffer, size_t Size )
+size_t osx_pl2303::addtoQueue( CirQueue *Queue, UInt8 *Buffer, size_t Size )
 {
     size_t      BytesWritten = 0;
     DEBUG_IOLog(4,"%s(%p)::AddtoQueue\n", getName(), this );
@@ -3891,7 +3892,7 @@ size_t me_nozap_driver_PL2303::addtoQueue( CirQueue *Queue, UInt8 *Buffer, size_
 
 /****************************************************************************************************/
 //
-//      Method:     me_nozap_driver_PL2303::RemovefromQueue
+//      Method:     osx_pl2303::RemovefromQueue
 //
 //      Inputs:     Queue - the queue to be removed from, Size - size of buffer
 //
@@ -3901,7 +3902,7 @@ size_t me_nozap_driver_PL2303::addtoQueue( CirQueue *Queue, UInt8 *Buffer, size_
 //
 /****************************************************************************************************/
 
-size_t me_nozap_driver_PL2303::removefromQueue( CirQueue *Queue, UInt8 *Buffer, size_t MaxSize )
+size_t osx_pl2303::removefromQueue( CirQueue *Queue, UInt8 *Buffer, size_t MaxSize )
 {
     size_t      BytesReceived = 0;
     UInt8       Value;
@@ -3919,7 +3920,7 @@ size_t me_nozap_driver_PL2303::removefromQueue( CirQueue *Queue, UInt8 *Buffer, 
 
 /****************************************************************************************************/
 //
-//      Method:     me_nozap_driver_PL2303::FreeSpaceinQueue
+//      Method:     osx_pl2303::FreeSpaceinQueue
 //
 //      Inputs:     Queue - the queue to be queried
 //
@@ -3929,18 +3930,18 @@ size_t me_nozap_driver_PL2303::removefromQueue( CirQueue *Queue, UInt8 *Buffer, 
 //
 /****************************************************************************************************/
 
-size_t me_nozap_driver_PL2303::freeSpaceinQueue( CirQueue *Queue )
+size_t osx_pl2303::freeSpaceinQueue( CirQueue *Queue )
 {
     size_t  retVal = 0;
     DEBUG_IOLog(6,"%s(%p)::FreeSpaceinQueue\n", getName(), this );
 	
     if( !(fPort && fPort->serialRequestLock ) ) goto Fail;
-	DEBUG_IOLog(6,"me_nozap_driver_PL2303::freeSpaceinQueue IOLockLock( port->serialRequestLock );\n");
+	DEBUG_IOLog(6,"osx_pl2303::freeSpaceinQueue IOLockLock( port->serialRequestLock );\n");
     
 	IOLockLock( fPort->serialRequestLock );
 	
     retVal = Queue->Size - Queue->InQueue;
- 	DEBUG_IOLog(6,"me_nozap_driver_PL2303::freeSpaceinQueue IOLockUnLock( port->serialRequestLock );\n");
+ 	DEBUG_IOLog(6,"osx_pl2303::freeSpaceinQueue IOLockUnLock( port->serialRequestLock );\n");
     
     IOLockUnlock(fPort->serialRequestLock);
     
@@ -3951,7 +3952,7 @@ Fail:
 
 /****************************************************************************************************/
 //
-//      Method:     me_nozap_driver_PL2303::UsedSpaceinQueue
+//      Method:     osx_pl2303::UsedSpaceinQueue
 //
 //      Inputs:     Queue - the queue to be queried
 //
@@ -3961,7 +3962,7 @@ Fail:
 //
 /****************************************************************************************************/
 
-size_t me_nozap_driver_PL2303::usedSpaceinQueue( CirQueue *Queue )
+size_t osx_pl2303::usedSpaceinQueue( CirQueue *Queue )
 {
     DEBUG_IOLog(6,"%s(%p)::UsedSpaceinQueue\n", getName(), this );
     
@@ -3971,7 +3972,7 @@ size_t me_nozap_driver_PL2303::usedSpaceinQueue( CirQueue *Queue )
 
 /****************************************************************************************************/
 //
-//      Method:     me_nozap_driver_PL2303::GetQueueSize
+//      Method:     osx_pl2303::GetQueueSize
 //
 //      Inputs:     Queue - the queue to be queried
 //
@@ -3981,7 +3982,7 @@ size_t me_nozap_driver_PL2303::usedSpaceinQueue( CirQueue *Queue )
 //
 /****************************************************************************************************/
 
-size_t me_nozap_driver_PL2303::getQueueSize( CirQueue *Queue )
+size_t osx_pl2303::getQueueSize( CirQueue *Queue )
 {
     DEBUG_IOLog(4,"%s(%p)::GetQueueSize\n", getName(), this );
     
@@ -3991,7 +3992,7 @@ size_t me_nozap_driver_PL2303::getQueueSize( CirQueue *Queue )
 
 /****************************************************************************************************/
 //
-//      Method:     me_nozap_driver_PL2303::GetQueueStatus
+//      Method:     osx_pl2303::GetQueueStatus
 //
 //      Inputs:     Queue - the queue to be queried
 //
@@ -4001,7 +4002,7 @@ size_t me_nozap_driver_PL2303::getQueueSize( CirQueue *Queue )
 //
 /****************************************************************************************************/
 
-QueueStatus me_nozap_driver_PL2303::getQueueStatus( CirQueue *Queue )
+QueueStatus osx_pl2303::getQueueStatus( CirQueue *Queue )
 {
     if ( (Queue->NextChar == Queue->LastChar) && Queue->InQueue )
         return kQueueFull;
@@ -4014,7 +4015,7 @@ QueueStatus me_nozap_driver_PL2303::getQueueStatus( CirQueue *Queue )
 
 /****************************************************************************************************/
 //
-//      Method:     me_nozap_driver_PL2303::CheckQueues
+//      Method:     osx_pl2303::CheckQueues
 //
 //      Inputs:     port - the port to check
 //
@@ -4024,7 +4025,7 @@ QueueStatus me_nozap_driver_PL2303::getQueueStatus( CirQueue *Queue )
 //
 /****************************************************************************************************/
 
-void me_nozap_driver_PL2303::checkQueues( PortInfo_t *port )
+void osx_pl2303::checkQueues( PortInfo_t *port )
 {
     unsigned long   Used;
     unsigned long   Free;
@@ -4163,7 +4164,7 @@ void me_nozap_driver_PL2303::checkQueues( PortInfo_t *port )
 
 /****************************************************************************************************/
 //
-//      Method:     me_nozap_driver_PL2303::SetUpTransmit
+//      Method:     osx_pl2303::SetUpTransmit
 //
 //      Inputs:
 //
@@ -4173,7 +4174,7 @@ void me_nozap_driver_PL2303::checkQueues( PortInfo_t *port )
 //
 /****************************************************************************************************/
 
-bool me_nozap_driver_PL2303::setUpTransmit( void )
+bool osx_pl2303::setUpTransmit( void )
 {
     size_t      count = 0;
     size_t      data_Length = 0;
@@ -4243,7 +4244,7 @@ bool me_nozap_driver_PL2303::setUpTransmit( void )
 
 /****************************************************************************************************/
 //
-//      Method:     me_nozap_driver_PL2303::setControlLines
+//      Method:     osx_pl2303::setControlLines
 //
 //      Inputs:     the Port and state
 //
@@ -4252,7 +4253,7 @@ bool me_nozap_driver_PL2303::setUpTransmit( void )
 //      Desc:       set control lines of the serial port ( DTR and RTS )
 //
 /****************************************************************************************************/
-IOReturn me_nozap_driver_PL2303::setControlLines( PortInfo_t *port ){
+IOReturn osx_pl2303::setControlLines( PortInfo_t *port ){
 	UInt32 state = port->State;
 	IOReturn rtn;
 	IOUSBDevRequest request;
@@ -4290,7 +4291,7 @@ IOReturn me_nozap_driver_PL2303::setControlLines( PortInfo_t *port ){
 //	{(LowWater-BIGGEST_EVENT) ≤ HighWater ≤ (size-BIGGEST_EVENT)} must be enforced.
 
 
-UInt32 me_nozap_driver_PL2303::generateRxQState( PortInfo_t *port )
+UInt32 osx_pl2303::generateRxQState( PortInfo_t *port )
 {
     IOLog("%s(%p)::generateRxQState\n", getName(), this );
     
@@ -4350,7 +4351,7 @@ UInt32 me_nozap_driver_PL2303::generateRxQState( PortInfo_t *port )
 //
 /****************************************************************************************************/
 
-IOReturn me_nozap_driver_PL2303::setBreak( bool data){
+IOReturn osx_pl2303::setBreak( bool data){
 	UInt16 value;
 	IOReturn rtn;
 	IOUSBDevRequest request;

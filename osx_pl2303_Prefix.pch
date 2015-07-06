@@ -1,0 +1,57 @@
+/*
+ *
+ * Prefix header for all source files of the 'osx-pl2303' target in the 'osx-pl2303' project
+ *
+ * Copyright (c) 2015 maniswebdesign, Takashi Yoshi (takashi@yoshi.email)
+ * Copyright (c) 2013 NoZAP B.V., Jeroen Arnoldus (opensource@nozap.me, http://www.nozap.me http://www.nozap.nl )
+ * Copyright (c) 2006 BJA Electronics, Jeroen Arnoldus (opensource@bja-electronics.nl)
+ *
+ * Additional contributors:
+ *     Michael Haller
+ *     Maarten Pepping
+ *     Bryan Berg
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ *
+ * Source of inspiration:
+ * - Linux kernel PL2303.c Copyright (C) 2001-2004 Greg Kroah-Hartman (greg@kroah.com)
+ *                         Copyright (C) 2003 IBM Corp.
+ * - Apple16x50Serial Copyright (c) 1997-2003 Apple Computer, Inc. All rights reserved.
+ *                    Copyright (c) 1994-1996 NeXT Software, Inc.  All rights reserved.
+ * - AppleRS232Serial Copyright (c) 2002 Apple Computer, Inc. All rights reserved.
+ * - AppleUSBIrda Copyright (c) 2000 Apple Computer, Inc. All rights reserved.
+ *
+ *
+ *
+ */
+
+
+/**
+ * Clock Types
+ */
+
+#include <stdint.h>
+
+#ifdef	__LP64__
+
+typedef unsigned long		clock_sec_t;
+typedef unsigned int		clock_usec_t, clock_nsec_t;
+
+#else	/* __LP64__ */
+
+typedef uint32_t			clock_sec_t;
+typedef uint32_t			clock_usec_t, clock_nsec_t;
+
+#endif	/* __LP64__ */

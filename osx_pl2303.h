@@ -1,6 +1,8 @@
 /*
+ *
  * osx_pl2303.h Prolific PL2303 USB to serial adaptor driver for OS X
  *
+ * Copyright (c) 2015 maniswebdesign, Takashi Yoshi (takashi@yoshi.email)
  * Copyright (c) 2013 NoZAP B.V., Jeroen Arnoldus (opensource@nozap.me , http://www.nozap.me http://www.nozap.nl )
  * Copyright (c) 2006-2012 BJA Electronics, Jeroen Arnoldus (opensource@bja-electronics.nl)
  *
@@ -43,9 +45,9 @@
 #define PROLIFIC_REV_HX_CHIP_D	0x0400
 #define PROLIFIC_REV_1			0x0001
 
-#define baseName        "NoZAP-PL2303-"
+#define baseName        "USB"
 
-#define defaultName     "PL2303 Device"
+#define defaultName     "Serial PL2303 Device"
 #define productNameLength   32                  // Arbitrary length
 #define propertyTag     "Product Name"
 
@@ -349,9 +351,9 @@ typedef struct
 	
 } PortInfo_t;
 
-class me_nozap_driver_PL2303 : public IOSerialDriverSync
+class osx_pl2303 : public IOSerialDriverSync
 {
-	OSDeclareDefaultStructors(me_nozap_driver_PL2303)
+	OSDeclareDefaultStructors(osx_pl2303)
 private:
     UInt32          fCount;         // usb write length
     UInt8           fSessions;      // Active sessions (count of opens on /dev/tty entries)
@@ -510,4 +512,3 @@ private:
 	IOReturn        vendor_write0( UInt16 value, UInt16 index);
     
 };
-
